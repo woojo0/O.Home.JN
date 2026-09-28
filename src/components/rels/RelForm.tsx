@@ -155,7 +155,7 @@ function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   return <CropImg src={src} crop={crop} />;
 }
 
-export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSave, onCancel }: {
+export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSave, onCancel, onNewChar }: {
   initial: Relation | null;          // null = 신규 등록
   auId?: string;                     // AU 편집 모드 (v1.9) — 아트·캐치프레이즈·전신이 이 AU의 것
   myChars: Character[];
@@ -163,6 +163,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   existingIds?: string[];            // 페이지 주소 중복 검사용 (v1.9 — 신규 등록)
   onSave: (v: RelFormValue) => void;
   onCancel: () => void;
+  /** 캐릭터 새로 만들기 (커플홈) — 캐릭터 목록 페이지가 없으므로 등록 화면에서 바로 간다 */
+  onNewChar?: () => void;
 }) {
   const toast = useToast();
   const del = useConfirmDelete();   // 삭제 확인 모달 (v1.9 — 아트·전신)
@@ -406,11 +408,16 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                     </span>} />
                 </div>
               ))}
-              {myChars.length === 0 && <p className="hint">등록된 캐릭터가 없습니다 — 캐릭터를 먼저 등록해 주세요</p>}
+              {myChars.length === 0 && <p className="hint">등록된 캐릭터가 없습니다 — 아래 「＋ 캐릭터 만들기」로 먼저 만들어 주세요</p>}
               {myChars.length > 0 && shownChars.length === 0 && <p className="hint">검색 결과가 없습니다</p>}
             </div>
             {hiddenCount > 0 && <p className="hint" style={{ marginTop: 6 }}>외 {hiddenCount}명 — 검색으로 찾아 주세요</p>}
             <p className="hint">상대(타인) 캐릭터는 자관 상세에서 [＋ 멤버 추가]로 등록합니다</p>
+            {onNewChar && (
+              <button type="button" className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+                data-tip="캐릭터를 만든 뒤 이 화면으로 돌아옵니다 — 여기서 입력 중인 내용은 저장되지 않습니다"
+                onClick={onNewChar}>＋ 캐릭터 만들기</button>
+            )}
           </div>
         )}
 

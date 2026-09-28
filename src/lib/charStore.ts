@@ -423,3 +423,11 @@ export const findByKey = <T extends { id: string; slug?: string }>(list: T[], ke
 export const charPath = (c: { id: string; slug?: string }) => `/chars/${c.slug?.trim() || c.id}`;
 /** 이 자관의 주소 — 별명을 정했으면 그것, 아니면 id */
 export const relPath = (r: { id: string; slug?: string }) => `/rels/${r.slug?.trim() || r.id}`;
+
+/* ---------- 커플홈 — 자관 목록 페이지 없이 대표 자관으로 ---------- */
+/** 이 방문자가 열 수 있는 자관 (저장 순서 그대로) — 관리자는 전부, 회원은 나만보기 제외, 방문자는 전체공개만.
+ *  첫 번째가 대표 자관이다: 메뉴의 「자관」(/rels)은 목록 대신 여기로 바로 간다 */
+export const openableRels = (rels: Relation[], viewer: { isAdmin: boolean; loggedIn: boolean }) =>
+  rels.filter(r => viewer.isAdmin
+    || r.visibility === 'public'
+    || (r.visibility === 'member' && viewer.loggedIn));

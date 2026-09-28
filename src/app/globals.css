@@ -1014,7 +1014,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 자관 상세 — 헤더 이미지: 풀폭 블러 + 아래로 페이드아웃 (v1.5) */
 .page-rel-detail{position:relative;max-width:1280px}
 /* 배경 위 레이어링 — absolute로 배치되는 요소(AU·관리자 액션·모달)는 제외 */
-.page-rel-detail > *:not(.rel-backdrop):not(.modal-ov):not(.au-list):not(.rel-admin-actions){position:relative;z-index:1}
+.page-rel-detail > *:not(.rel-backdrop):not(.modal-ov):not(.au-list):not(.rel-admin-actions):not(.rel-switch){position:relative;z-index:1}
 .rel-backdrop{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100vw;height:600px;z-index:0!important;overflow:hidden;pointer-events:none;
   -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 35%,transparent 96%);
   mask-image:linear-gradient(to bottom,#000 0%,#000 35%,transparent 96%);}
@@ -1074,6 +1074,19 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .page-rel-detail > .au-list{position:absolute;top:20px;right:28px;left:auto;z-index:6}
 /* 관리자 액션 (좌상단) — 자관 수정 등 */
 .page-rel-detail > .rel-admin-actions{position:absolute;top:20px;left:28px;z-index:6;display:flex;gap:8px}
+/* 자관 전환 칩 (커플홈) — 자관 목록 페이지 대신 좌상단에서 오간다. 관리자면 액션 버튼 줄 아래 */
+.page-rel-detail > .rel-switch{position:absolute;top:20px;left:28px;z-index:6;display:flex;gap:6px;flex-wrap:wrap;max-width:44%}
+.page-rel-detail > .rel-switch.under{top:58px}
+.rel-switch button{height:26px;padding:0 11px;border-radius:13px;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);color:rgba(255,255,255,.82);font-size:calc(11px*var(--fs,1));letter-spacing:.06em;cursor:var(--cur-pointer,pointer);transition:.15s;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel-switch button:hover{border-color:rgba(255,255,255,.6);color:#fff}
+.rel-switch button.on{background:#fff;border-color:#fff;color:#1b1e23;font-weight:600}
+/* 좁은 화면 — 좌상단 절대 배치는 관리자 버튼·AU 목록·첫 대사와 겹친다. 흐름 안으로 내려 제목 위 가운데에.
+   위 여백은 관리자 버튼(20~50px)과 AU 네모(20~68px) 아래까지. 새 자관 버튼은 ＋만 */
+@media (max-width:620px){
+  .page-rel-detail > .rel-switch,.page-rel-detail > .rel-switch.under{position:relative;top:auto;left:auto;max-width:none;justify-content:center;margin-top:58px}
+  .page-rel-detail > .rel-switch + .rel-hero{padding-top:12px}
+  .rel-admin-actions .rel-new .t{display:none}
+}
 .au-item.add{border-style:dashed;display:grid;place-items:center;color:rgba(255,255,255,.75);font-size:calc(16px*var(--fs,1));background:rgba(255,255,255,.06)}
 .au-item{width:48px;aspect-ratio:1;border-radius:11px;cursor:var(--cur-pointer,pointer);overflow:hidden;position:relative;border:2px solid rgba(255,255,255,.25);transition:.15s}
 .au-item:hover{border-color:rgba(255,255,255,.6)}
@@ -1535,6 +1548,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .trpg-basic{display:grid;grid-template-columns:1fr 1fr}
 .trpg-basic .list-item{min-width:0}
 @media (max-width:900px){.trpg-basic{grid-template-columns:1fr}}
+/* 역극 로그 미리보기 (커플홈) — 로그 모달 안, 길면 안에서 스크롤 */
+.rp-log-pre{margin:0;max-height:240px;overflow:auto;padding:12px 14px;border:1.5px solid var(--line);border-radius:9px;background:rgba(127,127,127,.06);white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Consolas,monospace;font-size:calc(11.5px*var(--fs,1));line-height:1.7;color:var(--text,inherit)}
 .log-plain{white-space:pre-wrap;font-size:calc(13px*var(--fs,1));line-height:1.8;color:#2c3037;font-family:var(--sans)}
 
 /* ---------- 게시판 공통 (4.2) ---------- */

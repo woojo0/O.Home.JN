@@ -13,13 +13,13 @@ import {
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
-  findByKey, charPath,
+  findByKey, charPath, relPath, openableRels,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
 import { putBlob } from '@/lib/blobStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
-import { RpRoom, RP_SEED } from '@/lib/rpStore';
+import { RpRoom, RP_SEED, rpMemberIds } from '@/lib/rpStore';
 import { useFonts } from '@/lib/fontStore';
 import { Tip, KInput, KTextarea, KSelect, KRadio, KCheck } from '@/components/ui/Kit';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
@@ -358,6 +358,8 @@ export default function RelDetailPage() {
 
   // 별명 주소로도 열린다 (v2.0 사용자 요청 — 주소를 나중에 바꿔도 옛 주소가 살아 있게)
   const rel = findByKey(rels, id);
+  // 자관 전환 칩으로 다른 자관에 가면 같은 페이지가 재사용될 수 있다 — 보던 AU·일러·탭을 처음 상태로
+  useEffect(() => { setAuId('base'); setArtIdx(0); setQaNo(null); setTab('tl'); }, [id]);
 
   // 자관별 페이지 테마 (4.18 방식) — 별도 테마컬러면 홈 전체 팔레트를 임시 전환, 벗어나면 원복.
   // AU별 (v1.9): AU에 테마를 지정했으면 그것, 미지정이면 base(원본) 테마 따라가기
@@ -483,10 +485,12 @@ export default function RelDetailPage() {
     [rel, auId, qaQuery],
   );
   const relLogs = useMemo(() => logs.filter(l => l.relId === rel?.id), [logs, rel]);
-  // 역극 연동 (4.9) — 내가 참여한 방 + 공개 전환된 완결 방만 (비참여 방은 존재 자체 비노출)
+  // 역극 연동 (4.9) — 내가 참여한 방 + 공개 전환된 완결 방만 (비참여 방은 존재 자체 비노출).
+  // 참여자는 역극 페이지와 같은 계산(rpMemberIds)으로 — 자관 기반 방은 저장된 memberIds에 개설자만 있어서
+  // 상대 오너에게는 자기가 참여한 역극이 이 목록에 뜨지 않았다 (커플홈 작업 중 발견)
   const relRooms = useMemo(() => rooms.filter(rm => rm.relId === rel?.id
-    && ((user && rm.memberIds.includes(user.id)) || (rm.status === 'done' && rm.isPublic))),
-    [rooms, rel, user]);
+    && ((user && rpMemberIds(rm, rels, chars).includes(user.id)) || (rm.status === 'done' && rm.isPublic))),
+    [rooms, rel, user, rels, chars]);
 
   if (!loaded) return <section className="page" />;
   if (!rel || (rel.visibility === 'private' && !isAdmin) || (rel.visibility === 'member' && !user)) {
@@ -848,8 +852,28 @@ export default function RelDetailPage() {
             onClick={() => (isBaseAu ? setDelAsk(true) : setAuDelAsk(au!.id))}>
             {isBaseAu ? 'DELETE' : `DELETE ${au!.label}`}
           </button>
+          {/* 커플홈 — 자관 목록 페이지가 없으므로 새 자관은 여기서 */}
+          <button className="btn btn-dark rel-new" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
+            data-tip="새 자관 추가" onClick={() => router.push('/rels/new')}>＋<span className="t"> RELATION</span></button>
         </div>
       )}
+
+      {/* 자관 전환 (커플홈) — 목록 페이지 대신, 자관이 둘 이상일 때만 좌상단에 칩으로.
+          첫 번째(저장 순서)가 메뉴 「자관」으로 들어왔을 때 열리는 대표 자관이다 */}
+      {(() => {
+        const list = openableRels(rels, { isAdmin, loggedIn: !!user });
+        if (list.length < 2) return null;
+        return (
+          <div className={`rel-switch ${isAdmin ? 'under' : ''}`}>
+            {list.map(r => (
+              <button key={r.id} type="button" className={r.id === rel.id ? 'on' : ''}
+                onClick={() => { if (r.id !== rel.id) router.push(relPath(r)); }}>
+                {r.name}
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* AU 하나만 삭제 (v2.0 사용자 발견) — 자관 삭제와 확실히 구분되게 무엇이 남는지까지 적는다 */}
       <ConfirmModal open={auDelAsk !== null}
@@ -1314,6 +1338,13 @@ export default function RelDetailPage() {
             <KRadio name="mm" value="exist" current={mMode} onChange={v => setMMode(v as 'exist')} label="기존 캐릭터" />
             <KRadio name="mm" value="new" current={mMode} onChange={v => setMMode(v as 'new')} label="새 상대 캐릭터" />
           </div>
+          {/* 커플홈 — 캐릭터 목록이 없으므로 프로필을 갖춘 캐릭터는 여기서 만들러 간다. 만들면 이 자관으로 돌아온다 */}
+          <p className="hint" style={{ margin: 0 }}>
+            프로필까지 갖춘 캐릭터는{' '}
+            <span style={{ color: 'var(--accent)', fontWeight: 600, cursor: 'var(--cur-pointer,pointer)' }}
+              onClick={() => router.push(`/chars/new?next=${encodeURIComponent(relPath(rel))}`)}>캐릭터 만들기 ›</span>
+            에서 만든 뒤 「기존 캐릭터」로 연결하세요
+          </p>
           {mMode === 'exist' ? (
             <div>
               {/* 검색형 선택 — 인풋으로 거르고 아래 리스트에서 클릭 */}

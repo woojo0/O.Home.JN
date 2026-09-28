@@ -36,6 +36,7 @@ export default function RelNewPage() {
         myChars={chars.filter(c => c.own)}
         existingIds={rels.flatMap(r => [r.id, ...(r.slug ? [r.slug] : [])])}
         onCancel={() => router.push('/rels')}
+        onNewChar={() => router.push('/chars/new?next=/rels/new')}
         onSave={v => {
           // 팔레트는 캐릭터 쪽을 상세에서 그대로 읽는다 — 여기서 복사해 두면 나중에 캐릭터 색을
           // 바꿔도 자관이 따라오지 않는다 (v2.0 — 상세 페이지와 같은 규칙으로 통일)

@@ -1,5 +1,5 @@
 // 상단 메뉴 트리 — 기획서 3장 (계층 메뉴, 메뉴 선택제)
-// 기본 구성은 프로토타입_2 상단 메뉴를 따름 (커미션·기록 그룹 포함)
+// 기본 구성은 프로토타입_2 상단 메뉴를 따름 (기록 그룹 포함 · 커미션은 제거)
 // ※ 프로토타입의 「로그인」 gnb 항목은 임시 배치 — 실제로는 우상단 사용자 영역에 표시 (3장 주석)
 // TODO(환경설정 메뉴 관리): 관리자가 이 구조를 GUI로 편집 → DB 저장으로 이전
 export interface MenuItem {
@@ -9,8 +9,8 @@ export interface MenuItem {
 }
 
 /** 배치 가능한 기능(모듈) 전체 — href → 기본 이름. 메뉴 트리에 넣어야 노출됨 (3장 메뉴 선택제) */
+// 커플홈 — /chars(캐릭터 목록)는 두지 않는다. 캐릭터는 자관 페이지의 멤버 카드에서 연다
 export const FEATURES: { href: string; label: string }[] = [
-  { href: '/chars', label: '캐릭터' },
   { href: '/rels', label: '자관' },
   { href: '/rp', label: '역극' },
   { href: '/board', label: '리스트' },
@@ -32,7 +32,6 @@ export const DEFAULT_MENU: MenuItem[] = [
   {
     label: '자놀',
     children: [
-      { label: '캐릭터', href: '/chars' },
       { label: '자관', href: '/rels' },
       { label: '역극', href: '/rp' },
     ],

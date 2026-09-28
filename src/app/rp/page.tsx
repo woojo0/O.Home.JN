@@ -1,6 +1,6 @@
 ﻿'use client';
 // 역극 (4.9) — 실시간 채팅형. 방 개설(자관 기반/자유) · 참여자에게만 존재 노출 ·
-// 캐릭터 선택 발화(테마색 말풍선) · 지문(/desc) · 메시지 수정/삭제 · 완결/공개 전환 · HTML 내보내기
+// 캐릭터 선택 발화(테마색 말풍선) · 지문(/desc) · 메시지 수정/삭제 · 완결/공개 전환 · 로그(txt/html 저장 · TRPG 로그 백업 올리기)
 // ※ 실시간 송수신·입력 중 표시·참여자 전원 동의는 Supabase Realtime 연동 시 활성화 (현재 localStorage)
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
@@ -15,6 +15,7 @@ import { KInput, KTextarea, KSelect, KCheck } from '@/components/ui/Kit';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
+import { RpLogModal } from '@/components/rp/RpLogModal';
 
 /** 캐릭터 얼굴 칩 (썸네일 or 데모 플레이스홀더) */
 function Face({ ch, className }: { ch?: Character; className: string }) {
@@ -253,29 +254,9 @@ export default function RpPage() {
     }, `대화 ${count}개도 함께 삭제됩니다.`);
   };
 
-  // 완결 로그 HTML 내보내기 (4.9 — TRPG 백업에 붙일 수 있는 형태)
-  const exportHtml = () => {
-    if (!sel) return;
-    const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-    const rows = msgsOf(sel).map(m => {
-      if (m.kind === 'desc') {
-        return `<p style="text-align:center;color:#4a505a;line-height:1.8;margin:14px 0">${esc(m.text)}</p>`;
-      }
-      const ch = rpChars.find(c => c.id === m.charId);
-      const name = ch?.name ?? '';
-      const color = ch?.color ?? '#5d636d';
-      return `<div style="margin:10px 0;line-height:1.7"><b style="color:${color};letter-spacing:.05em">${esc(name)}</b> — ${esc(m.text)}</div>`;
-    }).join('\n');
-    const html = `<div style="font-family:sans-serif;max-width:720px;margin:0 auto">
-<h2 style="letter-spacing:.08em">${esc(sel.title)}</h2>
-${rows}
-</div>`;
-    const u = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
-    const a = document.createElement('a');
-    a.href = u; a.download = `${sel.title}.html`;
-    a.click();
-    URL.revokeObjectURL(u);
-  };
+  // 로그 (커플홈) — txt/html 저장 · TRPG 로그 백업에 올리기. 예전의 HTML 내보내기(EXPORT)를 대신한다
+  const [logOpen, setLogOpen] = useState(false);
+  useEffect(() => { setLogOpen(false); }, [sel?.id]);
 
   if (!loaded) return <section className="page" />;
 
@@ -334,7 +315,11 @@ ${rows}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 6px 12px', flexShrink: 0 }}>
             <b style={{ fontSize: 12, letterSpacing: '.1em', color: 'var(--sub)' }}>MY ROOMS</b>
             <button className="btn btn-dark" style={{ padding: '0 12px', height: 30, fontSize: 11 }}
-              onClick={() => setNewOpen(true)}>＋ NEW ROOM</button>
+              onClick={() => {
+                // 커플홈 — 기반 자관은 대표 자관(첫 번째)부터 골라 둔다. 자유 개설은 셀렉트에서
+                setNRel(rels[0]?.id ?? 'none'); setNAu('base');
+                setNewOpen(true);
+              }}>＋ NEW ROOM</button>
           </div>
           <div className="rp-rooms-list">
             {myRooms.map(r => (
@@ -382,9 +367,12 @@ ${rows}
                         onClick={() => patchRoom({ isPublic: !sel.isPublic })}>
                         {sel.isPublic ? 'UNPUBLISH' : 'PUBLISH'}
                       </button>
-                      <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
-                        onClick={exportHtml}>EXPORT</button>
                     </>
+                  )}
+                  {/* 로그 — 참여자 누구나, 진행 중에도 (중간 백업용). 게시판 올리기는 모달 안에서 관리자만 */}
+                  {msgsOf(sel).length > 0 && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      onClick={() => setLogOpen(true)}>LOG</button>
                   )}
                   {canManage && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
@@ -583,9 +571,15 @@ ${rows}
         </div>
       </Modal>
 
+      {/* 역극 로그 — 열 때만 그린다 (게시판 목록도 그때 불러온다) */}
+      {logOpen && sel && (
+        <RpLogModal room={sel} msgs={msgsOf(sel)} chars={rpChars} sub={roomLabel(sel)}
+          isAdmin={isAdmin} onClose={() => setLogOpen(false)} />
+      )}
+
       {/* 완결 확인 (삭제 아님 — END/CANCEL) */}
       <ConfirmModal open={endAsk} title="역극을 완결 처리하시겠습니까?"
-        body="완결 후에는 공개 전환과 로그 내보내기를 사용할 수 있습니다."
+        body="완결 후에는 공개 전환을 사용할 수 있습니다. 로그 저장은 진행 중에도 LOG에서 할 수 있습니다."
         onClose={() => setEndAsk(false)}
         buttons={[
           { label: 'END', kind: 'dark', onClick: () => { patchRoom({ status: 'done' }); setEndAsk(false); } },
