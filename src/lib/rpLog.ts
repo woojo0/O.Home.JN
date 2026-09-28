@@ -1,5 +1,5 @@
 // 역극 로그 만들기 (커플홈) — 역극 방의 발화를 txt / html 로그로.
-// txt는 파일 저장용, html은 파일 저장 + TRPG 로그 백업 게시판 본문용(상세에서 원본 스타일 그대로 그려진다).
+// txt는 파일 저장용, html은 파일 저장 + RP LOG 게시판 본문용(상세에서 원본 스타일 그대로 그려진다).
 import type { RpMessage } from './rpStore';
 import { hexRgb } from './rpStore';
 import type { Character } from './charStore';
@@ -12,7 +12,7 @@ export interface RpLogInfo {
 export interface RpLogOpts {
   /** 시각 표시 — 켜면 줄 앞에 [HH:MM], 날짜가 바뀌는 곳에 구분선 */
   time: boolean;
-  /** 로그 백업 게시판 본문용 — 제목·캐릭터 이름은 게시판 상세가 이미 위에 보여 주므로 빼고 기간·개수만 */
+  /** RP LOG 게시판 본문용 — 제목·캐릭터 이름은 게시판 상세가 이미 위에 보여 주므로 빼고 기간·개수만 */
   forBoard?: boolean;
 }
 
@@ -34,13 +34,13 @@ export function rpLogRange(msgs: RpMessage[]): string {
   return a === b ? a : `${a} – ${b}`;
 }
 
-/** 마지막 발화 날짜 — 로그 백업의 날짜 칸(YYYY-MM-DD) */
+/** 마지막 발화 날짜 — RP LOG의 날짜 칸(YYYY-MM-DD) */
 export function rpLogLastDate(msgs: RpMessage[]): string {
   const iso = msgs.length ? msgs[msgs.length - 1].date : new Date().toISOString();
   return ymd(iso).replace(/\./g, '-');
 }
 
-/** 이 로그에서 말한 캐릭터 — 처음 말한 순서대로 (로그 백업의 「동행」 칸·썸네일 색) */
+/** 이 로그에서 말한 캐릭터 — 처음 말한 순서대로 (RP LOG의 「동행」 칸·썸네일 색) */
 export function rpSpeakers(msgs: RpMessage[], chars: Character[]): Character[] {
   const seen = new Set<string>();
   const out: Character[] = [];

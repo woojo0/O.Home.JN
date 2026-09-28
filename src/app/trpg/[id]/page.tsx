@@ -1,5 +1,5 @@
 'use client';
-// TRPG 로그 상세 (4.3) — HTML이면 원본 스타일 그대로 격리 렌더(iframe 샌드박스, 스크립트 실행 안 됨),
+// RP LOG 상세 (옛 TRPG 로그, 4.3) — HTML이면 원본 스타일 그대로 격리 렌더(iframe 샌드박스, 스크립트 실행 안 됨),
 // 일반 텍스트면 로그용 기본 서식으로 표시
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -61,7 +61,7 @@ export default function TrpgDetailPage() {
      **다른 early return보다 먼저 불러야 한다**(훅이므로 렌더마다 개수가 같아야 한다) */
   const blocked = useHrefBlock(l && sectionHref('trpg', l.secId ?? MAIN_SEC));
   // 큰 글씨 — 추가 섹션이면 그 이름, 눌렀을 때도 그 목록으로 (v2.0 사용자 제보)
-  const tt = useSectionTitle('trpg', l?.secId, 'TRPG LOG');
+  const tt = useSectionTitle('trpg', l?.secId, 'RP LOG');
   const bd = bodies.find(x => x.id === id);   // 분리 저장된 본문 — 권한이 없으면 애초에 안 온다 (undefined)
 
   // 접근권한 (4.3) — 관리자 / 공개범위 충족 / 비밀번호 입력자 /

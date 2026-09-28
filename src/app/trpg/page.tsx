@@ -1,5 +1,5 @@
 'use client';
-// TRPG 로그 백업 (4.3) — 티켓형/기본형 스킨 · 우측 자관 뱃지 필터 · ＋ ADD LOG
+// RP LOG (옛 TRPG 로그 백업, 4.3 — 커플홈에서 이름 변경) — 티켓형/기본형 스킨 · 우측 자관 뱃지 필터 · ＋ ADD LOG
 // 본문 입력 3방식: 파일 업로드(.txt/.html 내용 자동 판별) / HTML 붙여넣기 / 직접 작성
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -268,7 +268,7 @@ function TrpgPageInner() {
   return (
     <section className="page">
       <div className="page-head">
-        <PageTitle>{sec.id === 'main' ? 'TRPG LOG' : sec.name}</PageTitle>
+        <PageTitle>{sec.id === 'main' ? 'RP LOG' : sec.name}</PageTitle>
         <EditableDesc k="trpg-desc" def="티켓형 스킨 · 시나리오 타이틀 폰트 개별 설정 · 우측 자관 뱃지로 필터" />
         <div className="head-actions">
           <SearchBar onSearch={setQ} />

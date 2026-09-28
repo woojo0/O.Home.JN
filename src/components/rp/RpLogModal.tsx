@@ -1,5 +1,5 @@
 'use client';
-// 역극 로그 (커플홈) — 방의 발화를 로그로 만들어 txt/html 파일로 저장하거나 TRPG 로그 백업 게시판에 올린다.
+// 역극 로그 (커플홈) — 방의 발화를 로그로 만들어 txt/html 파일로 저장하거나 RP LOG 게시판에 올린다.
 // 파일 저장은 방 참여자 누구나, 게시판 올리기는 관리자만 (로그 등록이 원래 관리자 전용이다).
 import React, { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -54,7 +54,7 @@ export function RpLogModal({ room, msgs, chars, sub, isAdmin, onClose }: {
   );
 }
 
-/** TRPG 로그 백업 게시판에 올리기 — 관리자에게만 그려서, 참여자에게는 로그 목록을 불러오지도 않는다 */
+/** RP LOG 게시판에 올리기 — 관리자에게만 그려서, 참여자에게는 로그 목록을 불러오지도 않는다 */
 function PostToTrpg({ room, msgs, chars, sub, time }: {
   room: RpRoom; msgs: RpMessage[]; chars: Character[]; sub: string; time: boolean;
 }) {
@@ -63,7 +63,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
   const [logsAll, setLogsAll, logsLoaded] = useLocalList<TrpgLog>('ohome.trpg.v1', TRPG_SEED);
   const [bodies, setBodies, bodiesLoaded] = useLocalList<TrpgLogBody>('ohome.trpgbody.v1', TRPG_BODY_SEED);
   const { list } = useSections();
-  const secs = list('trpg');   // 로그 백업을 여러 개로 만들었으면 어디에 올릴지 고른다
+  const secs = list('trpg');   // RP LOG를 여러 개로 만들었으면 어디에 올릴지 고른다
 
   const [title, setTitle] = useState(room.title);
   const [catchphrase, setCatchphrase] = useState('');
@@ -105,7 +105,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
           : { c1: '#4c5a6e', c2: '#242b36' },
         ...secStamp(secId),
       };
-      // 본문은 목록과 분리 저장 — 로그 백업 페이지의 등록과 같은 방식 (본문 문서는 뒤에 붙인다)
+      // 본문은 목록과 분리 저장 — RP LOG 페이지의 등록과 같은 방식 (본문 문서는 뒤에 붙인다)
       const body: TrpgLogBody = {
         id,
         ...(await saveLogBody(bodyText)),
@@ -116,7 +116,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
       setLogsAll([log, ...logsAll]);
       setBodies([...bodies, body]);
       setPostedId(id);
-      toast('TRPG 로그 백업에 올렸습니다');
+      toast('RP LOG에 올렸습니다');
     } finally {
       setBusy(false);
     }
@@ -124,7 +124,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
 
   return (
     <div style={{ borderTop: '1px dashed var(--line)', paddingTop: 14, display: 'grid', gap: 9 }}>
-      <label className="k-label" style={{ margin: 0 }}>TRPG 로그 백업에 올리기</label>
+      <label className="k-label" style={{ margin: 0 }}>RP LOG에 올리기</label>
       <KInput placeholder="제목 (필수)" value={title} onChange={e => setTitle(e.target.value)} />
       <KInput placeholder="캐치프레이즈 (선택)" value={catchphrase} onChange={e => setCatchphrase(e.target.value)} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -151,7 +151,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
       </p>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn btn-dark" disabled={!ready || busy || !!postedId} onClick={post}>
-          {busy ? '올리는 중…' : postedId ? '올렸습니다' : !ready ? '불러오는 중…' : '＋ 로그 백업에 올리기'}
+          {busy ? '올리는 중…' : postedId ? '올렸습니다' : !ready ? '불러오는 중…' : '＋ RP LOG에 올리기'}
         </button>
         {postedId && (
           <button className="btn btn-ghost" onClick={() => router.push(`/trpg/${postedId}`)}>올린 로그 보기 ›</button>

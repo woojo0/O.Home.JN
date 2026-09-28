@@ -20,8 +20,8 @@ const LABEL: Record<string, string> = {
   roadview: '로드비',
   characters: '캐릭터',
   relations: '자관',
-  trpg_logs: 'TRPG 로그',
-  trpg_log_bodies: 'TRPG 로그 본문',
+  trpg_logs: 'RP LOG',
+  trpg_log_bodies: 'RP LOG 본문',
   applicants: '커미션 신청',
 };
 

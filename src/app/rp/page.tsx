@@ -1,6 +1,6 @@
 ﻿'use client';
 // 역극 (4.9) — 실시간 채팅형. 방 개설(자관 기반/자유) · 참여자에게만 존재 노출 ·
-// 캐릭터 선택 발화(테마색 말풍선) · 지문(/desc) · 메시지 수정/삭제 · 완결/공개 전환 · 로그(txt/html 저장 · TRPG 로그 백업 올리기)
+// 캐릭터 선택 발화(테마색 말풍선) · 지문(/desc) · 메시지 수정/삭제 · 완결/공개 전환 · 로그(txt/html 저장 · RP LOG 올리기)
 // ※ 실시간 송수신·입력 중 표시·참여자 전원 동의는 Supabase Realtime 연동 시 활성화 (현재 localStorage)
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
@@ -254,7 +254,7 @@ export default function RpPage() {
     }, `대화 ${count}개도 함께 삭제됩니다.`);
   };
 
-  // 로그 (커플홈) — txt/html 저장 · TRPG 로그 백업에 올리기. 예전의 HTML 내보내기(EXPORT)를 대신한다
+  // 로그 (커플홈) — txt/html 저장 · RP LOG에 올리기. 예전의 HTML 내보내기(EXPORT)를 대신한다
   const [logOpen, setLogOpen] = useState(false);
   useEffect(() => { setLogOpen(false); }, [sel?.id]);
 
