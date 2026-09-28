@@ -61,7 +61,7 @@ import { FIRESTORE_RULES, STORAGE_RULES } from '@/lib/firebaseRules';
 import { SCHEMA_SQL } from '@/lib/schemaSql';
 
 const CATEGORIES = [
-  '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', '커미션', 'TRPG', '감상타래', '메모장',
+  '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', 'TRPG', '감상타래', '메모장',
   '폰트', '마우스 커서', 'BGM', '무드 리스트', '회원/보안', '데이터 백업',
 ] as const;
 
@@ -3328,8 +3328,6 @@ function SettingsInner() {
             <BoardPane />
           ) : tab === '자관 질문' ? (
             <RelQPane />
-          ) : tab === '커미션' ? (
-            <CommPane />
           ) : tab === 'TRPG' ? (
             <TrpgPane />
           ) : tab === '감상타래' ? (
