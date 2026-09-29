@@ -74,12 +74,15 @@ a{color:inherit;text-decoration:none}
 /* ---------- 상단 바 ---------- */
 .topbar{
   position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:22px;
-  padding:0 26px;height:58px;color:#e8eaee;
+  /* 높이는 최소 58px — 로고가 크면(필기체 등) 로고만큼 커진다 (커플홈 사용자 제보: 로고가 바 밖으로 넘쳤다) */
+  padding:6px 26px;min-height:58px;color:#e8eaee;
   background:var(--top-bg);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line-dark);
 }
-.brand{font-family:var(--serif);font-size:calc(21px*var(--fs,1));letter-spacing:.32em;font-weight:600;color:var(--top-brand);cursor:var(--cur-pointer,pointer);white-space:nowrap}
+/* 로고 글씨 — 타이틀 폰트의 크기 %·굵기를 따른다 (커플홈 사용자 제보: 크기 %를 줄여도 로고가 그대로였다) */
+.brand{font-family:var(--serif);font-size:calc(21px*var(--fs,1)*var(--fs-title,1));letter-spacing:.32em;font-weight:var(--fw-title,600);color:var(--top-brand);cursor:var(--cur-pointer,pointer);white-space:nowrap}
 .brand small{display:block;font-family:var(--font-logosub,var(--sans));font-weight:var(--fw-logosub,400);font-size:calc(8.5px*var(--fs,1)*var(--fs-logosub,1));letter-spacing:.42em;color:#8d939d;margin-top:-2px}
+.brand .bt{display:block}
 .brand small.al-left{text-align:left}.brand small.al-center{text-align:center}.brand small.al-right{text-align:right}
 .gnb{display:flex;gap:2px;flex:1;min-width:0;position:relative;--fs:var(--fs-menu,1)} /* min-width:0 — 가용 폭 그대로 측정 (⋯ 수납 계산, v1.9) */
 .gnb button,.gnb a.gnb-link{
@@ -514,7 +517,7 @@ a{color:inherit;text-decoration:none}
   .rp-layout.mopen > .tagside{display:block}
   /* 채팅창을 화면 아래까지 (v2.0 사용자 요청 — 「아래 여백 줄이고 채팅창을 더 아래로」)
      100dvh − 위 요소들(상단바·제목·접힘 바)·BGM 바 여유. 64vh 고정은 아래가 뭉텅 남았다 */
-  .rp-chat{order:3;height:calc(100dvh - 245px);min-height:380px}
+  .rp-chat{order:3;height:calc(100dvh - 187px - var(--top-h,58px));min-height:380px}
   .page-rp{padding-bottom:14px}
   /* 입력창 포커스 — 페이지 제목·접힘 바 없이 역극 영역만 (v1.9) */
   .page.rp-focus .page-head{display:none}
@@ -990,7 +993,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .side-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.18s} /* 딩벳 글리프 아래 쏠림 보정 (v1.9 실측 — 사용자 미세조정 +1) */
 .side-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
 .side-icons button.on{background:var(--tab-on-bg,var(--panel-solid));color:var(--tab-on-fg,var(--ink));border-color:transparent;opacity:1}
-.profile-center{border-radius:var(--radius);overflow:hidden;position:sticky;top:10px;height:calc(100vh - 150px);min-height:480px}
+.profile-center{border-radius:var(--radius);overflow:hidden;position:sticky;top:10px;height:calc(100vh - 92px - var(--top-h,58px));min-height:480px} /* 상단 바 높이를 따라간다 (커플홈) */
 .profile-center img{width:100%;height:100%;object-fit:cover}
 /* 스티키 안정성 (v1.9): 끝까지 스크롤했을 때 아트 하단 == 정보 패널 하단이 되도록
    하단 여백을 계산값으로 고정 — viewH(100vh-58) - top(10) - artH(100vh-150) = 82px */
@@ -1227,6 +1230,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 @media (max-width:960px){.cal-layout{grid-template-columns:1fr}}
 .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 .cal-head b{font-family:var(--serif);font-size:calc(20px*var(--fs,1));letter-spacing:.2em}
+/* 달 제목 + 관리자용 폰트 버튼 (커플홈) — 버튼은 제목에 마우스를 올렸을 때만 */
+.cal-ttl{display:inline-flex;align-items:center;gap:8px}
+.cal-font-btn{opacity:0;font-size:calc(11px*var(--fs,1));font-family:var(--sans);color:var(--sub);border:1px solid var(--line);border-radius:7px;padding:2px 7px;transition:opacity .15s}
+.cal-ttl:hover .cal-font-btn,.cal-font-btn:focus-visible{opacity:1}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .cal-grid .dow{text-align:center;font-size:calc(10px*var(--fs,1));letter-spacing:.2em;color:var(--faint);padding:6px 0}
 .cal-cell{aspect-ratio:1/1.02;border-radius:9px;padding:7px 8px;font-size:calc(11px*var(--fs,1));color:var(--sub);background:#fff;border:1px solid var(--line);transition:.13s;cursor:var(--cur-pointer,pointer);overflow:hidden}
@@ -1767,7 +1774,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 모바일 (8장 — 620px 전환) */
 @media (max-width:620px){
   .gnb{display:none}
-  .topbar{padding:0 16px;gap:12px}
+  .topbar{padding:6px 16px;gap:12px}
   /* gnb(flex:1)가 숨어 우측 밀림이 사라짐 — 알림·프로필/로그인 우측 정렬 복원 (8장) */
   .user-wrap,.login-link{margin-left:auto}
   .page{padding:16px 16px 90px}

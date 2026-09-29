@@ -39,6 +39,10 @@ export interface MenuSettings {
   /** 갤러리 글쓰기를 특정 회원으로 좁히기 (v2.0) — 'member'일 때만 의미 · 비우면 모든 회원 */
   galWriteMembers?: Record<string, string[]>;
   calTitle: 'en' | 'num';            // 스케줄러 달 표기 (v1.9) — AUGUST 2026 / 2026.08
+  /** 스케줄러 달 제목 폰트 (커플홈 사용자 요청) — 스케줄러 화면에서 고른다. 비우면 타이틀 폰트를 따라간다 */
+  calFont?: string;
+  /** 스케줄러 달 제목 크기 % — 비우면 100 */
+  calFontScale?: number;
   imgProtect: ImgProtectArea[];      // 이미지 저장 방지 영역 (v1.9 — 우클릭·드래그 차단, 관리자 제외)
 }
 

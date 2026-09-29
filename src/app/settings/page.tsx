@@ -39,7 +39,8 @@ import { SymbolInput } from '@/components/ui/SymbolInput';
 import { allBlobs, putBlobAs, useBlobUrl, getBlob } from '@/lib/blobStore';
 import { parseAni } from '@/lib/aniCursor';
 import { fileDrop } from '@/lib/dnd';
-import { Character, CHAR_SEED, Relation, REL_SEED } from '@/lib/charStore';
+import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relsWithoutChar } from '@/lib/charStore';
+import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { Mood, MOOD_SEED, moodTint } from '@/lib/diaryStore';
 import {
@@ -61,7 +62,7 @@ import { FIRESTORE_RULES, STORAGE_RULES } from '@/lib/firebaseRules';
 import { SCHEMA_SQL } from '@/lib/schemaSql';
 
 const CATEGORIES = [
-  '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', 'TRPG', '감상타래', '메모장',
+  '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '캐릭터', '자관 질문', 'TRPG', '감상타래', '메모장',
   '폰트', '마우스 커서', 'BGM', '무드 리스트', '회원/보안', '데이터 백업',
 ] as const;
 
@@ -835,6 +836,68 @@ function BoardPane() {
 }
 
 /** 자관 질문 탭 (v1.9) — 질문 세트(CP/NCP) 관리. 자관 상세의 QUESTIONS 섹션 추가 시 세트를 골라 넣는다 */
+/** 캐릭터 탭 (커플홈) — 캐릭터 목록 페이지를 없애서, 자관에 연결되지 않은 캐릭터는 들어갈 길이 없었다.
+ *  관리자만 여기서 전체를 보고 열기·수정·삭제한다. 삭제하면 들어가 있던 자관에서도 함께 빠진다 */
+function CharPane() {
+  const router = useRouter();
+  const [chars, setChars, loaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
+  const [rels, setRels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const pool = useMembers();
+  const del = useConfirmDelete();
+  const relsOf = (id: string) => rels.filter(r => r.members.some(m => m.charId === id));
+  // 내 캐릭터 먼저, 그다음 상대 캐릭터 — 각각은 저장 순서 그대로
+  const list = [...chars.filter(c => c.own), ...chars.filter(c => !c.own)];
+  const remove = (c: Character) => {
+    const linked = relsOf(c.id);
+    del.ask(`「${c.name}」 캐릭터를 삭제하시겠습니까?`, () => {
+      setChars(chars.filter(x => x.id !== c.id));
+      const nextRels = relsWithoutChar(rels, c.id);
+      if (nextRels) setRels(nextRels);
+    }, linked.length
+      ? `프로필·탭이 함께 삭제되고 자관 「${linked.map(r => r.name).join('」·「')}」에서도 빠집니다. 복구할 수 없습니다.`
+      : '프로필·탭이 함께 삭제되며 복구할 수 없습니다.');
+  };
+  const smallBtn = { padding: '3px 9px', fontSize: 10.5 };
+  return (
+    <div className="set-sec">
+      <h3>캐릭터</h3>
+      <div className="d">모든 캐릭터 — 자관에 연결되지 않은 캐릭터도 여기서 열거나 수정·삭제할 수 있습니다</div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 6 }}>
+        <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+          onClick={() => router.push(`/chars/new?next=${encodeURIComponent('/settings?tab=캐릭터')}`)}>＋ 캐릭터 만들기</button>
+      </div>
+      {list.map(c => {
+        const linked = relsOf(c.id);
+        const granted = (c.grants ?? []).map(g => pool.find(m => m.id === g.userId)?.nickname ?? g.userId);
+        return (
+          <div key={c.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 2px', borderBottom: '1px dashed var(--line)' }}>
+            <div style={{ width: 34, aspectRatio: '3/4', borderRadius: 7, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
+              <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <b style={{ fontSize: 13 }}><i className="cmt-dot" style={{ background: c.color }} />{c.name}</b>
+              {c.sub && <small style={{ marginLeft: 7, color: 'var(--faint)', fontSize: 11 }}>{c.sub}</small>}
+              <div style={{ fontSize: 11, color: 'var(--sub)', marginTop: 3 }}>
+                {c.own ? '내 캐릭터' : '상대 캐릭터'}
+                {linked.length > 0
+                  ? ` · 자관 ${linked.map(r => r.name).join(', ')}`
+                  : <b style={{ color: 'var(--accent)' }}> · 자관 연결 없음</b>}
+                {granted.length > 0 && ` · 권한 ${granted.join(', ')}`}
+                {c.visibility !== 'public' && ` · ${c.visibility === 'member' ? '멤버공개' : '비공개'}`}
+              </div>
+            </div>
+            <button className="btn btn-ghost" style={smallBtn} onClick={() => router.push(charPath(c))}>열기</button>
+            <button className="btn btn-ghost" style={smallBtn} onClick={() => router.push(`/chars/${c.id}/edit`)}>수정</button>
+            <button className="btn btn-ghost" style={smallBtn} onClick={() => remove(c)}>DELETE</button>
+          </div>
+        );
+      })}
+      {loaded && list.length === 0 && <p className="hint">등록된 캐릭터가 없습니다</p>}
+      {del.element}
+    </div>
+  );
+}
+
 function RelQPane() {
   const [sets, setSets] = useLocalList<RelQuestionSet>(RELQ_KEY, RELQ_SEED);
   const [selId, setSelId] = useState<string | null>(null);
@@ -3326,6 +3389,8 @@ function SettingsInner() {
             <MenuPane />
           ) : tab === '게시판 관리' ? (
             <BoardPane />
+          ) : tab === '캐릭터' ? (
+            <CharPane />
           ) : tab === '자관 질문' ? (
             <RelQPane />
           ) : tab === 'TRPG' ? (

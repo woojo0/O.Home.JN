@@ -15,6 +15,7 @@ import { useBlobUrl } from '@/lib/blobStore';
 import { refreshPage } from '@/lib/pageRefresh';
 import { useToast } from '@/components/ui/Toast';
 import { KToggle } from '@/components/ui/Kit';
+import { InkFit } from '@/components/ui/InkFit';
 import {
   Notif, NotifType, NOTIF_EVENT, NOTIF_TYPE_LABEL,
   readNotifs, markRead, markAllRead, clearReadNotifs, notifSettings, setNotifSetting, syncNotifs, selfTestNotif,
@@ -107,6 +108,19 @@ export function TopBar() {
 
   // 상위 메뉴 개수 무제한 (v1.9) — 바 폭을 넘치는 항목은 「⋯」 드롭다운으로 자동 이동 (priority+)
   const gnbRef = useRef<HTMLElement>(null);
+  /* 상단 바 높이 (커플홈) — 로고 폰트가 크면(필기체 등) 바가 로고만큼 커진다. 그 높이를 --top-h로 알려
+     화면 높이로 계산하는 곳(캐릭터 상세 아트 등)이 따라오게 한다 */
+  const topRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = topRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const root = document.documentElement.style;
+    const set = () => root.setProperty('--top-h', `${Math.round(el.getBoundingClientRect().height)}px`);
+    set();   // 처음 한 번은 바로 — 관찰자는 화면이 실제로 그려질 때에야 알려 준다
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => { ro.disconnect(); root.removeProperty('--top-h'); };
+  }, []);
   const measureRef = useRef<HTMLDivElement>(null);
   const [visCount, setVisCount] = useState(menu.length);
   const menuKey = menu.map(m => m.label).join('|');
@@ -146,10 +160,11 @@ export function TopBar() {
   const moreMenu = menu.slice(visCount);
 
   return (
-    <header className="topbar">
-      {/* 로고 — 텍스트·서브타이틀·정렬은 환경설정 > 디자인 (5.2) */}
+    <header className="topbar" ref={topRef}>
+      {/* 로고 — 텍스트·서브타이틀·정렬은 환경설정 > 디자인 (5.2).
+          로고 글씨는 실제 글자 모양만큼 자리를 잡는다 (커플홈 — 필기체 로고가 바 밖으로 넘쳤다) */}
       <div className="brand" onClick={() => nav('/')}>
-        {siteLoaded && site.title}
+        {siteLoaded && <InkFit as="span" className="bt" text={site.title} />}
         {siteLoaded && site.subtitle && <small className={`al-${site.align}`}>{site.subtitle}</small>}
       </div>
 

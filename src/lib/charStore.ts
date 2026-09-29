@@ -431,3 +431,12 @@ export const openableRels = (rels: Relation[], viewer: { isAdmin: boolean; logge
   rels.filter(r => viewer.isAdmin
     || r.visibility === 'public'
     || (r.visibility === 'member' && viewer.loggedIn));
+
+/** 캐릭터를 지울 때 자관 멤버에서도 뺀 자관 목록 — 뺄 게 없으면 null (커플홈).
+ *  지우는 쪽(관리자)이 바로 정리한다 — 자관 상세가 열릴 때 스스로 정리하게 두면
+ *  방문자가 먼저 열었을 때 저장 권한이 없어 실패한다 */
+export function relsWithoutChar(rels: Relation[], charId: string): Relation[] | null {
+  const has = (r: Relation) => r.members.some(m => m.charId === charId);
+  if (!rels.some(has)) return null;
+  return rels.map(r => (has(r) ? { ...r, members: r.members.filter(m => m.charId !== charId) } : r));
+}

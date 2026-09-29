@@ -31,6 +31,7 @@ import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/Crop
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
+import { InkFit } from '@/components/ui/InkFit';
 
 /** 전신 이미지 — 비율 유지, 하단 정렬, 크기 %는 자관 수정 미리보기에서 지정 (v1.9) */
 // 전신 그림자는 「그림자 직접 지정」의 색·강도를 따른다 (v2.0 사용자 요청) — 자관명 그림자와 같은 설정
@@ -149,13 +150,12 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         <div>
           {/* 이름 폰트는 캐릭터 프로필에서 지정한 것을 그대로 쓰고,
               크기는 이 자관에서 정한 값 (자관 수정의 「이름 크기」 — 기본 17px, v2.0) */}
-          <b style={{
+          {/* 세로 자리는 글자 모양만큼 (커플홈) — 필기체 등 위아래로 긴 폰트가 아래 소개 줄을 덮지 않게 */}
+          <InkFit as="b" text={char.name} style={{
             fontFamily: familyOf(char.fontId), fontSize: member.nameSize ?? undefined,
             // 굵기는 끌 수 있다 (v2.0 사용자 요청) — 기본은 지금처럼 굵게(<b>)
             fontWeight: (member.nameBold ?? true) ? undefined : 400,
-          }}>
-            {char.name}
-          </b>
+          }} />
           <small>{[char.sub, noteOf(member)].filter(Boolean).join(' · ')}</small>
         </div>
       </div>
@@ -389,14 +389,16 @@ export default function RelDetailPage() {
 
   // 삭제된 캐릭터를 가리키는 멤버 자동 정리 — 카드도 안 뜨고 [＋ 멤버 추가]도
   // 안 나오는 유령 슬롯이 남지 않게 (캐릭터 삭제 기능 도입에 따른 정합성 보정)
+  // **관리자만 정리한다** (커플홈) — 방문자에게는 비공개 캐릭터가 목록에 안 와서 「삭제된 것」처럼 보이고,
+  // 저장 권한도 없어 실패한 뒤 서버 값으로 되돌아오면 다시 정리를 시도하는 되풀이가 됐다
   useEffect(() => {
-    if (!loaded || !charsLoaded || !rel) return;
+    if (!isAdmin || !loaded || !charsLoaded || !rel) return;
     const alive = rel.members.filter(m => chars.some(c => c.id === m.charId));
     if (alive.length !== rel.members.length) {
       setRels(rels.map(r => (r.id === rel.id ? { ...r, members: alive } : r)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, charsLoaded, rel?.id, rel?.members.length, chars.length]);
+  }, [isAdmin, loaded, charsLoaded, rel?.id, rel?.members.length, chars.length]);
 
   const isDuo = rel ? (rel.kind ? rel.kind === 'pair' : rel.members.length === 2) : false;
   const au = rel?.aus.find(a => a.id === auId) ?? rel?.aus[0];

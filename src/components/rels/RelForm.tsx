@@ -313,7 +313,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
     onSave({
       // 수정에서 정한 주소는 별명으로 (v2.0) — 신규는 rels/new가 이 값을 id로 쓴다
       slug: slug.trim() || undefined,
-      name: name.trim().toUpperCase(),
+      // 입력한 그대로 저장 (커플홈 사용자 요청 — 영문을 쓰면 무조건 대문자로 바뀌었다)
+      name: name.trim(),
       catchphrase: catchphrase.trim(),
       kind, visibility, fontId, bodyFontId,
       arts: artIds,

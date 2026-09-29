@@ -7,13 +7,14 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey} from '@/lib/charStore';
+import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey, relsWithoutChar } from '@/lib/charStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
 import { useTheme } from '@/lib/ThemeProvider';
 import { createPortal } from 'react-dom';
 import { BlobImg, useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
+import { InkFit } from '@/components/ui/InkFit';
 
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useSectionTitle } from '@/lib/sectionStore';
@@ -24,7 +25,7 @@ function CharDetailInner() {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
   const [chars, setChars, loaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
-  const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const [rels, setRels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const { familyOf } = useFonts();
   // 큰 글씨 — 추가 섹션(창고캐 등)이면 그 이름, 눌렀을 때도 그 목록으로 (v2.0 사용자 제보)
   const tt = useSectionTitle('chars', findByKey(chars, id)?.secId, 'CHARACTERS');
@@ -150,7 +151,13 @@ function CharDetailInner() {
           body="프로필·탭 정보가 함께 삭제되며 복구할 수 없습니다. 이 캐릭터가 들어간 자관에서는 멤버 표시가 사라집니다."
           onClose={() => setDelAsk(false)}
           buttons={[
-            { label: 'DELETE', kind: 'accent', onClick: () => { setChars(chars.filter(c => c.id !== ch.id)); router.push(tt.href); } },
+            { label: 'DELETE', kind: 'accent', onClick: () => {
+              setChars(chars.filter(c => c.id !== ch.id));
+              // 들어가 있던 자관에서도 바로 뺀다 (커플홈 — 자관 상세의 자동 정리에 맡기지 않는다)
+              const nextRels = relsWithoutChar(rels, ch.id);
+              if (nextRels) setRels(nextRels);
+              router.push(tt.href);
+            } },
             { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
           ]} />
       </div>
@@ -249,12 +256,14 @@ function CharDetailInner() {
         <div className="panel profile-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
           {/* 크기는 캐릭터마다 직접 정한다 (등록·수정의 「이름 크기」) — 자동으로 줄이면
               이름 길이에 따라 어중간해져서, 정한 크기를 그대로 쓴다 (v2.0 사용자 확정) */}
-          <div style={{
+          {/* 세로 자리는 고정하지 않는다 (커플홈 사용자 제보) — 필기체처럼 위아래로 긴 폰트는 1.1배 줄 칸을 넘어
+              위 여백·아래 줄(성별·키)을 침범했다. 실제 글자 모양을 재서 그만큼 + 여백을 차지한다 */}
+          <InkFit text={eff.name} style={{
             fontFamily: familyOf(eff.fontId) ?? 'var(--serif)', fontSize: eff.nameSize ?? 38,
             // 굵기는 끌 수 있다 (v2.0 사용자 요청 — 폰트에 따라 볼드가 안 어울린다). 기본은 지금처럼 굵게
             fontWeight: (eff.nameBold ?? true) ? 600 : 400,
             letterSpacing: '.2em', lineHeight: 1.1,
-          }}>{eff.name}</div>
+          }} />
           <div className="sub" style={{ marginBottom: 14 }}>{eff.sub}</div>
 
           {tab === 'basic' ? (
