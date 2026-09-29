@@ -10,7 +10,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 export function InkFit({ as = 'div', text, className, style, gap = 0.08 }: {
-  as?: 'div' | 'b' | 'span';
+  as?: 'div' | 'b' | 'span' | 'h1';
   text: string;
   className?: string;
   style?: React.CSSProperties;

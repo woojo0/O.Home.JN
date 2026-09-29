@@ -326,6 +326,9 @@ export interface RelAu {
    *  미지정이면 자관 기본 폰트 */
   fontId?: string;
   bodyFontId?: string;
+  /** AU별 자관명 크기 px·굵게 (커플홈) — 미지정이면 자관 기본 */
+  titleSize?: number;
+  titleBold?: boolean;
   /** AU별 전신 앞뒤 (v2.0) — AU 편집의 앞으로/뒤로가 원본 배치를 바꾸지 않게. 미지정: 자관 기본 */
   fullFront?: string;
   /** AU별 색·배경 — 없으면 자관 기본 (위 RelAuStyle 설명 참조) */
@@ -359,6 +362,8 @@ export interface Relation {
   catchphrase: string;
   kind?: 'pair' | 'multi';         // 페어(2인) / 다인(3인+) — 등록 시 선택
   fontId?: string;               // 자관 이름 폰트 (4.5 필수 요구 — 5.1 라이브러리)
+  titleSize?: number;            // 자관명(상세 대형 타이틀) 크기 px (커플홈 사용자 요청) — 미지정 64
+  titleBold?: boolean;           // 자관명 굵게 — 미지정이면 굵게(지금까지와 같다)
   bodyFontId?: string;           // 본문 폰트 — 카드 소개·타임라인·문답 텍스트
   arts?: string[];               // 아트 목록 (첫 장 = 대표 = 리스트 썸네일 원본)
   headerImgId?: string;          // 헤더 이미지 (v1.5 — 상단 풀폭 블러 + 페이드아웃)

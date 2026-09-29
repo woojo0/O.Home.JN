@@ -26,6 +26,8 @@ export interface RelFormValue {
   visibility: Visibility;
   fontId: string;
   bodyFontId: string;
+  titleSize?: number;        // 자관명 크기 px (커플홈)
+  titleBold?: boolean;       // 자관명 굵게 (커플홈)
   arts: string[];            // 첫 장 = 대표 = 리스트 썸네일 원본
   thumbCrop?: CropValue;
   headerImgId?: string;      // 헤더 이미지 (v1.5 — 풀폭 블러 + 페이드아웃)
@@ -181,6 +183,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [cp, setCp] = useState<RelCpTag>(initial?.cp ?? 'cp');   // CP/NCP (v1.9)
   // AU 편집이면 그 AU에 정한 폰트부터 (v2.0 사용자 제보 — AU 폰트가 분리되지 않던 것)
   const [fontId, setFontId] = useState((auObj?.fontId ?? initial?.fontId) ?? 'serif');
+  // 자관명 크기·굵게 (커플홈 사용자 요청) — AU 편집이면 그 AU 값, 없으면 자관 기본
+  const [titleSize, setTitleSize] = useState((auObj?.titleSize ?? initial?.titleSize) ?? 64);
+  const [titleBold, setTitleBold] = useState((auObj?.titleBold ?? initial?.titleBold) ?? true);
   const [bodyFontId, setBodyFontId] = useState((auObj?.bodyFontId ?? initial?.bodyFontId) ?? 'default');
   const [picked, setPicked] = useState<string[]>([]);
   const [arts, setArts] = useState<ArtItem[]>(() => {
@@ -316,7 +321,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       // 입력한 그대로 저장 (커플홈 사용자 요청 — 영문을 쓰면 무조건 대문자로 바뀌었다)
       name: name.trim(),
       catchphrase: catchphrase.trim(),
-      kind, visibility, fontId, bodyFontId,
+      kind, visibility, fontId, bodyFontId, titleSize, titleBold,
       arts: artIds,
       thumbCrop,
       headerImgId: headerFile ? await putBlob(headerFile) : (headerRemoved ? undefined : initHeaderId),
@@ -739,6 +744,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             <p className="hint" style={{ margin: '2px 0 0' }}>이름 폰트 — 상세 대형 타이틀에 적용</p>
             <KSelect value={fontId} onChange={setFontId}
               options={fonts.map(f => ({ value: f.id, label: <span style={{ fontFamily: deVarFamily(f.family) }}>{f.name}</span> }))} />
+            {/* 자관명 크기·굵게 (커플홈 사용자 요청) — 캐릭터 이름과 같은 방식. 폰트마다 알맞은 크기가 달라 직접 정한다 */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span className="k-label" style={{ margin: 0, flex: 1 }}>자관명 크기</span>
+              <KCheck label="Bold" checked={titleBold} onChange={setTitleBold} />
+              <KStep value={titleSize} onChange={setTitleSize} min={24} max={120} step={1} suffix="px" />
+            </div>
             <p className="hint" style={{ margin: '2px 0 0' }}>본문 폰트 — 카드 소개·타임라인·문답 텍스트에 적용</p>
             <KSelect value={bodyFontId} onChange={setBodyFontId}
               options={fonts.map(f => ({ value: f.id, label: <span style={{ fontFamily: deVarFamily(f.family) }}>{f.name}</span> }))} />

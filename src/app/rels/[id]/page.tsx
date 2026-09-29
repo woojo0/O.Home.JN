@@ -102,6 +102,8 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
   onFaceCrop?: (ref: string) => void;   // 얼굴칸(1:1) 크롭 다시 잡기 (v2.0)
 }) {
   const { familyOf } = useFonts();   // 이름은 캐릭터 프로필에서 지정한 폰트로
+  // 지정이 없으면 기본 세리프 원본 — 타이틀 폰트(로고 등)를 따라가지 않는다 (커플홈 사용자 요청)
+  const nameFont = (id?: string) => familyOf(id) ?? 'var(--serif-base)';
   const [lb, setLb] = useState<number | null>(null);
   // 멤버 제거는 우클릭 메뉴로 — 카드 아래에 상시 노출하면 정보가 아닌 것이 자리를 먹는다 (사용자 확정)
   const [ctx, setCtx] = useState<{ x: number; y: number } | null>(null);
@@ -127,7 +129,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
   if (auUnregistered) {
     return (
       <div className="panel mini-prof" onClick={onGo} style={{ cursor: 'var(--cur-pointer,pointer)', textAlign: 'center', padding: '44px 20px' }}>
-        <b style={{ fontSize: 15, letterSpacing: '.08em', fontFamily: familyOf(char.fontId) }}>{char.name}</b>
+        <b style={{ fontSize: 15, letterSpacing: '.08em', fontFamily: nameFont(char.fontId) }}>{char.name}</b>
         <p className="hint" style={{ marginTop: 10 }}>이 AU의 프로필이 아직 등록되지 않았습니다<br />카드를 누르면 캐릭터 페이지에서 등록할 수 있습니다</p>
       </div>
     );
@@ -152,7 +154,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
               크기는 이 자관에서 정한 값 (자관 수정의 「이름 크기」 — 기본 17px, v2.0) */}
           {/* 세로 자리는 글자 모양만큼 (커플홈) — 필기체 등 위아래로 긴 폰트가 아래 소개 줄을 덮지 않게 */}
           <InkFit as="b" text={char.name} style={{
-            fontFamily: familyOf(char.fontId), fontSize: member.nameSize ?? undefined,
+            fontFamily: nameFont(char.fontId), fontSize: member.nameSize ?? undefined,
             // 굵기는 끌 수 있다 (v2.0 사용자 요청) — 기본은 지금처럼 굵게(<b>)
             fontWeight: (member.nameBold ?? true) ? undefined : 400,
           }} />
@@ -241,6 +243,8 @@ export default function RelDetailPage() {
   const { user, isAdmin } = useAuth();
   const toast = useToast();
   const { familyOf } = useFonts();
+  // 캐릭터 이름 폰트 — 지정이 없으면 기본 세리프 원본 (커플홈: 타이틀 폰트를 따라가지 않는다)
+  const nameFont = (id?: string) => familyOf(id) ?? 'var(--serif-base)';
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const [chars, setChars, charsLoaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const [logs] = useLocalList<TrpgLog>('ohome.trpg.v1', TRPG_SEED);
@@ -409,6 +413,9 @@ export default function RelDetailPage() {
   const auFont = (isBaseAu ? undefined : au?.fontId) ?? rel?.fontId;
   const auBodyFont = (isBaseAu ? undefined : au?.bodyFontId) ?? rel?.bodyFontId;
   const auFullFront = (isBaseAu ? undefined : au?.fullFront) ?? rel?.fullFront;
+  // 자관명 크기·굵게 (커플홈) — AU에 정해 뒀으면 그 값, 없으면 자관 기본 (굵게가 기본)
+  const auTitleSize = (isBaseAu ? undefined : au?.titleSize) ?? rel?.titleSize;
+  const auTitleBold = ((isBaseAu ? undefined : au?.titleBold) ?? rel?.titleBold) ?? true;
   const auTimeline = (isBaseAu ? rel?.timeline : au?.timeline) ?? [];
   const auQuestions = (isBaseAu ? rel?.questions : au?.questions) ?? [];
   const curArt = auArts[Math.min(artIdx, Math.max(0, auArts.length - 1))];
@@ -925,10 +932,13 @@ export default function RelDetailPage() {
         {/* 자관명·캐치프레이즈 글씨색 — 직접 지정 시 (v1.9 사용자 요청, 미지정: 테마) */}
         {/* 이름 그림자 — 색·강도 직접 지정 (v2.0 사용자 요청, 미지정: 검정 60% · 기존과 동일) */}
         {/* 이름 자체는 AU마다 다르게 붙일 수 있다 (v2.0 사용자 요청) — 안 정했으면 자관 이름 그대로 */}
-        <h1 style={{
-          fontFamily: familyOf(auFont), color: auSt.nameColor,
+        {/* 크기·굵게는 자관 수정에서 (커플홈 사용자 요청 — AU별, 없으면 자관 기본). 세로 자리는 글자 모양만큼 */}
+        <InkFit as="h1" text={(!isBaseAu && au?.name?.trim()) || rel.name} style={{
+          fontFamily: familyOf(auFont) ?? 'var(--serif-base)', color: auSt.nameColor,
           textShadow: `0 4px 30px ${withAlpha(auSt.nameShadowColor ?? '#000000', 0.6 * ((auSt.nameShadow ?? 100) / 100))}`,
-        }}>{(!isBaseAu && au?.name?.trim()) || rel.name}</h1>
+          ...(auTitleBold ? null : { fontWeight: 400 }),
+          ...(auTitleSize ? { ['--rel-name-size' as string]: `${auTitleSize}px` } : null),
+        }} />
         <div className="catch" style={{ color: auSt.cpColor }}>
           {au?.catchphrase || rel.catchphrase}
         </div>
@@ -1033,12 +1043,12 @@ export default function RelDetailPage() {
                     {unreg ? (
                       /* AU 프로필 미등록 (v1.9) — 원본 프로필 대신 등록 안내 */
                       <>
-                        <b style={{ fontFamily: familyOf(findChar(chars, m.charId)?.fontId) }}>{findChar(chars, m.charId)?.name}</b>
+                        <b style={{ fontFamily: nameFont(findChar(chars, m.charId)?.fontId) }}>{findChar(chars, m.charId)?.name}</b>
                         <small>이 AU의 프로필 미등록 — 눌러서 등록</small>
                       </>
                     ) : (
                       <>
-                        <b style={{ fontFamily: familyOf(c.fontId) }}>{c.name}</b><i>{c.sub}</i>
+                        <b style={{ fontFamily: nameFont(c.fontId) }}>{c.name}</b><i>{c.sub}</i>
                         <small>{c.specs.slice(0, 3).map(s => s.value).join(' · ')}</small>
                         {(m.quote || noteOf(m) || m.keywords[0]) && (
                           <span className="ext">{m.quote || noteOf(m) || m.keywords[0]}</span>
@@ -1169,7 +1179,7 @@ export default function RelDetailPage() {
                   return (
                     <div key={j} className={`tl-say ${sideOf(s.charId)}`}
                       style={{ ['--cc' as string]: rgbTriple(c?.color ?? '#5d636d') }}>
-                      <div className="who" style={{ fontFamily: familyOf(c?.fontId) }}>{c?.name}</div>
+                      <div className="who" style={{ fontFamily: nameFont(c?.fontId) }}>{c?.name}</div>
                       <div className="bub">{s.text}</div>
                     </div>
                   );
@@ -1213,7 +1223,7 @@ export default function RelDetailPage() {
                         }}>
                         {/* 같은 캐릭터가 연달아 답하면 이름을 한 번만 (v2.0 사용자 요청) */}
                         {curAnswers[i - 1]?.charId !== a.charId && (
-                          <div className="who" style={{ fontFamily: familyOf(c?.fontId) }}>{c?.name}</div>
+                          <div className="who" style={{ fontFamily: nameFont(c?.fontId) }}>{c?.name}</div>
                         )}
                         <div className="bub" {...(a.note ? { 'data-note': a.note } : {})}>{a.text}</div>
                       </div>
@@ -1235,7 +1245,7 @@ export default function RelDetailPage() {
                         }
                       }}>
                         <CharFace c={charOf(qaChar ?? answerableIds[0])} className="f" />
-                        <small style={{ fontFamily: familyOf(charOf(qaChar ?? answerableIds[0])?.fontId) }}>
+                        <small style={{ fontFamily: nameFont(charOf(qaChar ?? answerableIds[0])?.fontId) }}>
                           {charOf(qaChar ?? answerableIds[0])?.name}{answerableIds.length > 1 ? ' ▾' : ''}
                         </small>
                         {qaPickPos && createPortal(
@@ -1246,7 +1256,7 @@ export default function RelDetailPage() {
                                 <div key={cid} style={{ display: 'flex', gap: 8, alignItems: 'center' }}
                                   onClick={e2 => { e2.stopPropagation(); setQaChar(cid); setQaPickPos(null); }}>
                                   <CharFace c={c} style={{ width: 20, height: 20, borderRadius: 6, flexShrink: 0 }} />
-                                  <span style={{ fontFamily: familyOf(c?.fontId) }}>{c?.name}</span>
+                                  <span style={{ fontFamily: nameFont(c?.fontId) }}>{c?.name}</span>
                                 </div>
                               );
                             })}

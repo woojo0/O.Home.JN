@@ -259,7 +259,7 @@ function CharDetailInner() {
           {/* 세로 자리는 고정하지 않는다 (커플홈 사용자 제보) — 필기체처럼 위아래로 긴 폰트는 1.1배 줄 칸을 넘어
               위 여백·아래 줄(성별·키)을 침범했다. 실제 글자 모양을 재서 그만큼 + 여백을 차지한다 */}
           <InkFit text={eff.name} style={{
-            fontFamily: familyOf(eff.fontId) ?? 'var(--serif)', fontSize: eff.nameSize ?? 38,
+            fontFamily: familyOf(eff.fontId) ?? 'var(--serif-base)', fontSize: eff.nameSize ?? 38,
             // 굵기는 끌 수 있다 (v2.0 사용자 요청 — 폰트에 따라 볼드가 안 어울린다). 기본은 지금처럼 굵게
             fontWeight: (eff.nameBold ?? true) ? 600 : 400,
             letterSpacing: '.2em', lineHeight: 1.1,
