@@ -240,8 +240,16 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [pageBgAngle, setPageBgAngle] = useState(st?.pageBgAngle ?? 180);
   const [charQuery, setCharQuery] = useState('');
   // 전신 이미지 (v1.9 — 페어 · 수정 모드) — AU 편집이면 그 AU의 전신
-  const pairMembers = !isNew && (initial!.kind ? initial!.kind === 'pair' : initial!.members.length === 2)
-    ? initial!.members.slice(0, 2) : [];
+  // 왼쪽 → 오른쪽 순서는 자관 상세와 같게 — 상세에서 좌우를 바꿨으면(pairRight) 그 자리대로 (커플홈 사용자 제보:
+  // 좌우를 바꿔도 여기의 「왼쪽·오른쪽」 이름표와 전신 미리보기는 등록 순서 그대로였다)
+  const pairMembers = (() => {
+    if (isNew || !(initial!.kind ? initial!.kind === 'pair' : initial!.members.length === 2)) return [];
+    const ms = initial!.members.slice(0, 2);
+    const right = initial!.pairRight;
+    return right && ms.some(m => m.charId === right)
+      ? [...ms.filter(m => m.charId !== right), ...ms.filter(m => m.charId === right)]
+      : ms;
+  })();
   const [fulls, setFulls] = useState<Record<string, FullDraft>>(() => {
     const o: Record<string, FullDraft> = {};
     for (const m of pairMembers) {
