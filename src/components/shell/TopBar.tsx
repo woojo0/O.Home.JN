@@ -268,7 +268,7 @@ export function TopBar() {
             {mySet && (
               <div className="nset">
                 {(Object.keys(NOTIF_TYPE_LABEL) as NotifType[])
-                  .filter(k => k !== 'guest' || isAdmin) // 방명록 알림은 관리자 항목
+                  .filter(k => k !== 'guest') // 방명록 알림 — 커플홈에서 방명록을 없애 항목도 숨긴다
                   .map(k => (
                     <label key={k} className="row">
                       <span>{NOTIF_TYPE_LABEL[k]}</span>

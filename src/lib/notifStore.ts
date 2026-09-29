@@ -12,7 +12,7 @@ import { isServerMode, backend } from './backend';
 import { fetchList, syncList } from './db';
 import { currentUserId } from './currentUser';
 
-export type NotifType = 'rp' | 'comment' | 'guest';
+export type NotifType = 'rp' | 'comment' | 'guest' | 'thread';
 export interface Notif {
   id: string;
   type: NotifType;
@@ -41,7 +41,7 @@ const SET_KEY = 'ohome.notifset.v1'; // 회원별 알림 항목 on/off — { [us
 export const NOTIF_EVENT = 'ohome-notif';
 
 export const NOTIF_TYPE_LABEL: Record<NotifType, string> = {
-  rp: '역극 새 메시지', comment: '내 글 댓글', guest: '방명록 (관리자)',
+  rp: '역극 새 메시지', comment: '내 글 댓글', guest: '방명록 (관리자)', thread: '감상타래 새 글',
 };
 
 export function readNotifs(): Notif[] {
@@ -61,8 +61,8 @@ function write(list: Notif[]) {
   window.dispatchEvent(new Event(NOTIF_EVENT));
 }
 
-export interface NotifSettings { rp: boolean; comment: boolean; guest: boolean }
-const DEFAULT_SET: NotifSettings = { rp: true, comment: true, guest: true };
+export interface NotifSettings { rp: boolean; comment: boolean; guest: boolean; thread: boolean }
+const DEFAULT_SET: NotifSettings = { rp: true, comment: true, guest: true, thread: true };
 
 export function notifSettings(userId: string): NotifSettings {
   try {

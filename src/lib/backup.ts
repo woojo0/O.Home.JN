@@ -41,7 +41,8 @@ export const RESET_CONTENT: ResetGroup[] = [
   { key: 'dotori', label: '도토리', keys: ['ohome.dotori.v1'] },
   { key: 'playlog', label: '플레이기록', keys: ['ohome.playlog.v1'] },
   { key: 'rp', label: '역극', keys: ['ohome.rp.v1'] },
-  { key: 'threads', label: '감상타래', keys: ['ohome.threads.v1'] },
+  // 글은 타래와 따로 저장이라(커플홈) 같이 지워야 타래만 지워지고 글이 유령처럼 남지 않는다
+  { key: 'threads', label: '감상타래', keys: ['ohome.threads.v1', 'ohome.thrposts.v1'] },
   { key: 'diary', label: '다이어리', keys: ['ohome.diary.v1'] },
   { key: 'memo', label: '메모장', keys: ['ohome.memo.v1'] },
   { key: 'comm', label: '커미션·신청자', keys: ['ohome.comm.v1', 'ohome.commapply.v1'] },

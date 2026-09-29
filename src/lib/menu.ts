@@ -9,7 +9,7 @@ export interface MenuItem {
 }
 
 /** 배치 가능한 기능(모듈) 전체 — href → 기본 이름. 메뉴 트리에 넣어야 노출됨 (3장 메뉴 선택제) */
-// 커플홈 — /chars(캐릭터 목록)는 두지 않는다. 캐릭터는 자관 페이지의 멤버 카드에서 연다
+// 커플홈 — /chars(캐릭터 목록)는 두지 않는다. 캐릭터는 자관 페이지의 멤버 카드에서 연다. 방명록(/guest)도 제거
 export const FEATURES: { href: string; label: string }[] = [
   { href: '/rels', label: '자관' },
   { href: '/rp', label: '역극' },
@@ -24,7 +24,6 @@ export const FEATURES: { href: string; label: string }[] = [
   { href: '/diary', label: '다이어리' },
   { href: '/threads', label: '감상타래' },
   { href: '/memo', label: '메모장' },
-  { href: '/guest', label: '방명록' },
   { href: '/intro', label: '소개' },
 ];
 
@@ -62,5 +61,4 @@ export const DEFAULT_MENU: MenuItem[] = [
       { label: '메모장', href: '/memo' },
     ],
   },
-  { label: '방명록', href: '/guest' },
 ];

@@ -22,6 +22,7 @@ const LABEL: Record<string, string> = {
   relations: '자관',
   trpg_logs: 'RP LOG',
   trpg_log_bodies: 'RP LOG 본문',
+  thread_posts: '감상타래 글',
   applicants: '커미션 신청',
 };
 

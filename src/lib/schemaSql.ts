@@ -60,7 +60,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ── 6. 콘텐츠 테이블 21종 ────────────────────────────────────
+-- ── 6. 콘텐츠 테이블 23종 ────────────────────────────────────
 -- 항목 하나 = 행 하나 (행 단위 권한·실시간). 항목의 세부 필드는 data(jsonb)에 담고,
 -- 권한·정렬·필터에 쓰는 값만 별도 컬럼으로 뽑아 둔다.
 do $$
@@ -87,6 +87,7 @@ declare content_tables text[] := array[
   'comments',     -- 댓글 (v2.0 — 글 안이 아니라 자기 행으로. 글을 수정하지 않고 댓글을 달 수 있게)
   'qa_answers',   -- 자관 문답 답변 (v2.0 — 같은 이유로 자관 안이 아니라 자기 행으로)
   'rp_messages',  -- 역극 발화 (v2.0 — 같은 이유로 방 안이 아니라 자기 행으로)
+  'thread_posts', -- 감상타래 글 (커플홈 — 같은 이유로 타래 안이 아니라 자기 행으로. 두 사람이 같이 쓴다)
   'notifications' -- 알림 (v2.0 — 기기 보관이던 것을 서버로: 받은 사람 계정으로 어느 기기에서나)
 ];
 begin
@@ -207,7 +208,7 @@ do $$
 declare t text;
 begin
   -- 발화·답변·댓글이 각자 행으로 분리됐으므로(v2.0) 실시간도 그 테이블을 봐야 한다
-  foreach t in array array['rp_rooms', 'rp_messages', 'relations', 'qa_answers', 'posts', 'comments', 'guestbook', 'notifications'] loop
+  foreach t in array array['rp_rooms', 'rp_messages', 'relations', 'qa_answers', 'posts', 'comments', 'guestbook', 'notifications', 'thread_posts'] loop
     begin
       execute format('alter publication supabase_realtime add table public.%I', t);
     exception when others then null;  -- 이미 추가돼 있으면 무시

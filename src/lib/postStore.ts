@@ -19,6 +19,9 @@ export interface Comment {
   date: string;          // ISO
   parentId?: string;     // 대댓글
   guestPw?: string;      // 게스트 본인 수정·삭제용 (mock — 실서비스는 서버 해시)
+  /** 캐입 댓글 (커플홈) — 이 캐릭터로 쓴 댓글. author에는 쓸 당시 캐릭터 이름이 들어 있다.
+   *  권한(수정·삭제)은 여전히 authorId(쓴 회원) 기준 */
+  charId?: string;
 }
 
 /**

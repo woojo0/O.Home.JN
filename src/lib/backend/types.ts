@@ -119,6 +119,9 @@ export const COLLECTION_OF: Record<string, string> = {
   // 역극 발화 — 방 안이 아니라 자기 문서로 (v2.0). 같은 이유로, 방 안에 두면 말할 때마다
   // 방을 UPDATE 해야 해서 남이 만든 방에서 참여자가 발화할 수 없었다
   'ohome.rpmsgs.v1': 'rp_messages',
+  // 감상타래 글 — 타래 안이 아니라 자기 문서로 (커플홈). 같은 이유로, 타래 안에 두면
+  // 상대 오너가 관리자 타래에 이어 쓸 수 없다 (두 사람이 같이 쓰는 타래)
+  'ohome.thrposts.v1': 'thread_posts',
   // 알림 — 기기 보관이던 것을 서버로 (v2.0 포크 제보 「알림이 안 와요」).
   // 행 주인(authorId)을 받는 사람으로 적어, 받는 사람 계정이 어느 기기에서나 받아 간다
   'ohome.notif.v1': 'notifications',

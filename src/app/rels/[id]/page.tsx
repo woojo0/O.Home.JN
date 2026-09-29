@@ -1096,7 +1096,7 @@ export default function RelDetailPage() {
               onClick={() => setQsetOpen(true)}>＋</button>
           )}
           {isAdmin && (
-            <span style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span className="rel-tab-acts">
               {/* 이 줄의 버튼은 홈 공통 버튼과 같은 세로 크기(35px)로 — 탭 줄에서만 작아 보이던 것 */}
               {tab === 'tl' && auTimeline.length > 1 && (
                 <button className={`btn ${tlSort ? 'btn-accent' : 'btn-ghost'}`}

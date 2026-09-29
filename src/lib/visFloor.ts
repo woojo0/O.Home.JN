@@ -28,7 +28,7 @@ const AREA: Record<string, { kind?: SectionKind; href?: string; board?: boolean 
   playlog: { kind: 'playlog' },
   diary: { kind: 'diary' },
   threads: { kind: 'threads' },
-  guestbook: { href: '/guest' },
+  thread_posts: { kind: 'threads' },   // 글도 타래의 소속(secId)을 따라 메뉴 비공개 판정을 받는다
   memos: { href: '/memo' },
   rp_rooms: { href: '/rp' },
   characters: { kind: 'chars' },
