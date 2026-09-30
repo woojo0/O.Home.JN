@@ -14,7 +14,7 @@ import {
   DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings,
 } from '@/lib/diaryStore';
 import {
-  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant,
+  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath,
 } from '@/lib/charStore';
 import { useFonts } from '@/lib/fontStore';
 import { renderBody } from '@/lib/sanitize';
@@ -198,7 +198,10 @@ function DiaryPageInner() {
       <div className="dy-col" key={side}>
         {side !== 'one' && (
           <div className="dy-col-hd">
-            <span className="cf" style={{ background: ch?.color ?? 'var(--line)', ['--cc' as string]: ch?.color ?? 'var(--line)' }}>
+            {/* 프로필 사진을 누르면 캐릭터 페이지로 (커플홈 사용자 요청) */}
+            <span className={`cf ${ch ? 'go' : ''}`} data-tip={ch ? '프로필 보기' : undefined}
+              style={{ background: ch?.color ?? 'var(--line)', ['--cc' as string]: ch?.color ?? 'var(--line)' }}
+              onClick={() => { if (ch) router.push(charPath(ch)); }}>
               {ch?.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
             </span>
             {/* 세로값 고정 + 글자 크기를 거기에 맞춘다 (커플홈 사용자 요청) — 두 칸 이름의 폰트가 달라도
