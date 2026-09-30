@@ -90,7 +90,7 @@ export function DiaryForm({ initial, moods, cats, charChoices, initialCharId, in
                 <KSelect minWidth={140} maxWidth={200} value={charId} onChange={setCharId}
                   options={charChoices.map(c => ({
                     value: c.id,
-                    label: <span><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
+                    label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
                   }))} />
               </div>
             )}

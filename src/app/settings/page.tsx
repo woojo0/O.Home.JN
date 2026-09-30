@@ -875,7 +875,7 @@ function CharPane() {
               <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <b style={{ fontSize: 13 }}><i className="cmt-dot" style={{ background: c.color }} />{c.name}</b>
+              <b style={{ fontSize: 13 }}><span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span></b>
               {c.sub && <small style={{ marginLeft: 7, color: 'var(--faint)', fontSize: 11 }}>{c.sub}</small>}
               <div style={{ fontSize: 11, color: 'var(--sub)', marginTop: 3 }}>
                 {c.own ? '내 캐릭터' : '상대 캐릭터'}

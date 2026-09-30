@@ -1661,6 +1661,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cmt .cmt-char{display:inline-flex;align-items:center;gap:6px;vertical-align:middle}
 .cmt .cmt-char .cf{width:20px;height:20px;border-radius:50%;overflow:hidden;position:relative;flex-shrink:0;box-shadow:0 0 0 1.5px var(--cc)}
 .cmt-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:middle}
+/* 색 점 + 이름 — 점을 글자 줄의 가운데에 (커플홈 사용자 제보: 드롭다운에서 점이 위로 붙었다.
+   드롭다운은 안쪽 요소를 전부 위쪽 정렬(.k-select .cur *)해서 점의 가운데 정렬이 덮였다) */
+.dot-lbl{display:inline-flex;align-items:center;gap:7px;max-width:100%;vertical-align:top}
+.dot-lbl > .cmt-dot{margin-right:0;flex-shrink:0}
 .cmt-input{border-top:1px solid var(--line);padding:12px;display:flex;gap:8px}
 .cmt-input .btn{white-space:nowrap}
 /* 특수문자 프리셋 팝업 (v1.9) — SymbolInput */

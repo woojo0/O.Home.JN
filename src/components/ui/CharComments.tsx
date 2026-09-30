@@ -121,7 +121,7 @@ export function CharComments({ target, targetId, rows, setRows, chars, notify }:
                 { value: 'me', label: `나 (${user.nickname})` },
                 ...choices.map(c => ({
                   value: c.id,
-                  label: <span><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
+                  label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
                 })),
               ]} />
           )}

@@ -24,7 +24,7 @@ import { useToast } from '@/components/ui/Toast';
 function MemoWho({ m, chars }: { m: StickyMemo; chars: Character[] }) {
   const ch = m.charId ? chars.find(c => c.id === m.charId) : undefined;
   return ch
-    ? <b><i className="cmt-dot" style={{ background: ch.color }} />{ch.name}</b>
+    ? <b><span className="dot-lbl"><i className="cmt-dot" style={{ background: ch.color }} />{ch.name}</span></b>
     : <b>{m.author}</b>;
 }
 
@@ -329,7 +329,7 @@ function MemoInner() {
                   { value: 'me', label: `나 (${user.nickname})` },
                   ...charChoices.map(c => ({
                     value: c.id,
-                    label: <span><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
+                    label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span>,
                   })),
                 ]} />
             </div>

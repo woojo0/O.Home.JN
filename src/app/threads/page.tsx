@@ -149,7 +149,7 @@ function ThreadsPageInner() {
     { value: 'me', label: `나 (${user.nickname})` as React.ReactNode },
     ...charChoices.map(c => ({
       value: c.id,
-      label: <span><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span> as React.ReactNode,
+      label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span> as React.ReactNode,
     })),
   ] : [];
 
