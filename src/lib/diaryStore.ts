@@ -41,7 +41,12 @@ export const DIARY_PER_PAGE = 5;
 
 /* ---------- 구분 탭 (커플홈 사용자 요청 — 무드 말고도 일기를 나눠 보는 탭, 환경설정에서 관리) ---------- */
 export interface DiaryCat { id: string; name: string }
-export interface DiarySettings { cats: DiaryCat[] }
+export interface DiarySettings {
+  cats: DiaryCat[];
+  /** 다이어리(섹션)마다 칸을 나눌 자관 — 섹션 id → 자관 id (커플홈 사용자 요청: 자관이 여럿일 때).
+   *  정하지 않은 다이어리는 첫 번째 자관 */
+  relBySec?: Record<string, string>;
+}
 export const DEFAULT_DIARY_SETTINGS: DiarySettings = { cats: [] };
 
 const SET_KEY = 'ohome.diaryset.v1';

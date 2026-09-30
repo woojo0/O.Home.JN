@@ -97,8 +97,10 @@ function DiaryPageInner() {
 
   if (!loaded) return <section className="page" />;
 
-  /* ---------- 칸 나눔 — 대표 자관(이 사람이 열 수 있는 첫 자관)의 왼쪽·오른쪽 캐릭터 ---------- */
-  const rel = openableRels(rels, { isAdmin, loggedIn: !!user })[0];
+  /* ---------- 칸 나눔 — 이 다이어리에 연결한 자관(환경설정 > 다이어리)의 왼쪽·오른쪽 캐릭터.
+     연결하지 않았거나 그 자관이 없어졌으면 이 사람이 열 수 있는 첫 자관 ---------- */
+  const linkedId = dset.relBySec?.[sec.id];
+  const rel = (linkedId && rels.find(r => r.id === linkedId)) || openableRels(rels, { isAdmin, loggedIn: !!user })[0];
   const sides = pairSides(rel);
   const charOf = (id?: string) => chars.find(c => c.id === id);
   const choices = user ? inCharChoices(chars, { isAdmin, id: user.id }) : [];

@@ -1370,10 +1370,38 @@ function SecurityRulesRow() {
 function DiaryCatPane() {
   const [dset, patch] = useDiarySettings();
   const [diaries] = useLocalList<DiaryPost>('ohome.diary.v1', DIARY_SEED);
+  const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const { list: secList } = useSections();
+  const diarySecs = secList('diary');
   const del = useConfirmDelete();
   const setCats = (cats: DiaryCat[]) => patch({ cats });
   return (
     <div className="set-sec" style={{ marginTop: 26 }}>
+      {/* 자관 연결 (커플홈 사용자 요청) — 다이어리마다 칸을 나눌 자관. 여러 개로 만든 다이어리는 각각 고른다 */}
+      <h3>자관 연결</h3>
+      <div className="d">
+        다이어리는 연결한 자관의 왼쪽·오른쪽 캐릭터 칸으로 나뉩니다 — 고르지 않으면 첫 번째 자관.
+        다이어리를 여러 개로 만들려면 게시판 관리의 「다른 목록도 여러 개로」에서
+      </div>
+      {diarySecs.map(s => (
+        <div key={s.id} className="set-row" style={{ width: '100%' }}>
+          <div className="l"><b>{s.name}</b>{s.id === MAIN_SEC && <span className="pill" style={{ marginLeft: 8 }}>기본</span>}</div>
+          <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
+            <KSelect minWidth={200} value={dset.relBySec?.[s.id] ?? ''}
+              onChange={v => {
+                const next = { ...(dset.relBySec ?? {}) };
+                if (v) next[s.id] = v; else delete next[s.id];
+                patch({ relBySec: next });
+              }}
+              options={[
+                { value: '', label: '자동 — 첫 번째 자관' },
+                ...rels.map(r => ({ value: r.id, label: r.name })),
+              ]} />
+          </div>
+        </div>
+      ))}
+
+      <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
       <h3>구분 탭</h3>
       <div className="d">다이어리 위쪽에 탭으로 나오는 구분 — 일기를 쓸 때 고릅니다 · ⠿ 드래그로 순서</div>
       <DragList items={dset.cats} keyOf={c => c.id} onReorder={setCats}
