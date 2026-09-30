@@ -13,7 +13,7 @@ import { useMainStore, WidgetConf, WIDGET_META, MULTI_TYPES, widgetLabel } from 
 import { useConfirmDelete, ConfirmModal, Modal } from '@/components/ui/Modal';
 import { exportBackup, importBackup, resetGroups, RESET_CONTENT, RESET_EXTRA } from '@/lib/backup';
 import { DiaryPost, DIARY_SEED } from '@/lib/diaryStore';
-import { newId } from '@/lib/postStore';
+import { newId, todayYmd } from '@/lib/postStore';
 import { useCommSettings, badgeStyle, CommBadge, CommSettings } from '@/lib/commStore';
 import {
   useBoardSettings, boardBadgeStyle, BoardBadge, galleryCatsOf,
@@ -1833,7 +1833,7 @@ function DataPane() {
       const u = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = u;
-      a.download = `ohome-backup${includeMembers ? '-with-members' : ''}-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.download = `ohome-backup${includeMembers ? '-with-members' : ''}-${todayYmd()}.zip`;
       a.click();
       URL.revokeObjectURL(u);
       toast(`백업 완료 — 데이터 ${dataCount}건 · 이미지 ${blobCount}개${includeMembers ? ' · 회원 포함' : ''}`);

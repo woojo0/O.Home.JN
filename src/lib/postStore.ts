@@ -193,6 +193,11 @@ export const BOARD_SEED: Post[] = [];
 
 export const GUEST_SEED: GuestEntry[] = [];
 
+/** 오늘 날짜 YYYY-MM-DD — **이 컴퓨터의 시간대**로 (커플홈 사용자 제보 — 「방금 뽑은 질문에 어제 날짜가 찍힌다」:
+ *  toISOString()은 UTC라 한국 아침 9시 전에는 전날 날짜가 나왔다) */
+export const todayYmd = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export const fmtDate = (iso: string) => {
   const d = new Date(iso);
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;

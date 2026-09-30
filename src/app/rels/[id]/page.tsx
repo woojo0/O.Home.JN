@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/ThemeProvider';
-import { useLocalList, newId } from '@/lib/postStore';
+import { useLocalList, newId, todayYmd } from '@/lib/postStore';
 import {
   Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant,
@@ -596,7 +596,7 @@ export default function RelDetailPage() {
   const addQuestion = () => {
     if (!qText.trim()) { toast('질문을 입력해 주세요'); return; }
     const no = Math.max(0, ...auQuestions.map(q => q.no)) + 1;
-    const entry: QaEntry = { no, q: qText.trim(), date: new Date().toISOString().slice(0, 10), answers: [] };
+    const entry: QaEntry = { no, q: qText.trim(), date: todayYmd(), answers: [] };
     patchAuData({ questions: [entry, ...auQuestions], qaEnabled: true });
     setQOpen(false); setQText(''); setQaNo(no); setTab('qa');
     toast('질문이 등록되었습니다');
@@ -633,7 +633,7 @@ export default function RelDetailPage() {
     const no = Math.max(0, ...auQuestions.map(x => x.no)) + 1;
     patchAuData({
       qaPool: auQaPool.filter((_, j) => j !== i),
-      questions: [{ no, q, date: new Date().toISOString().slice(0, 10), answers: [] }, ...auQuestions],
+      questions: [{ no, q, date: todayYmd(), answers: [] }, ...auQuestions],
       qaEnabled: true,
     });
     setQaNo(no);
@@ -670,7 +670,7 @@ export default function RelDetailPage() {
       if (auQaPool.length > 0) {
         const i = Math.floor(Math.random() * auQaPool.length);
         const no = Math.max(0, cur.no, ...rest.map(x => x.no)) + 1;
-        questions = [{ no, q: auQaPool[i], date: new Date().toISOString().slice(0, 10), answers: [] }, ...rest];
+        questions = [{ no, q: auQaPool[i], date: todayYmd(), answers: [] }, ...rest];
         qaPool = auQaPool.filter((_, j) => j !== i);
       }
       patchAuData({ questions, qaPool, qaEnabled: true });
