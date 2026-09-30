@@ -234,17 +234,18 @@ function DiaryPageInner() {
         <EditableDesc k="diary-desc" def="무드 일기 — 클릭하면 그 자리에서 펼쳐집니다" />
       </div>
 
-      {/* 구분 탭 (커플홈 — 환경설정 > 다이어리에서 관리 · 순서도 거기서) + 검색·WRITE */}
+      {/* 구분 탭 (커플홈 — 환경설정 > 다이어리에서 관리 · 순서도 거기서) + 검색·WRITE.
+          탭에는 숫자를 붙이지 않는다 — 이름과 붙어 읽혀 구분이 안 됐다 (커플홈 사용자 요청) */}
       <div className="toolrow" style={{ marginBottom: 16 }}>
         {dset.cats.length > 0 ? (
           <div className="seg" style={{ flexWrap: 'wrap' }}>
             {dset.cats.map(c => (
               <button key={c.id} className={effCat === c.id ? 'on' : ''} onClick={() => setFCat(c.id)}>
-                {c.name} {cntCat(c.id)}
+                {c.name}
               </button>
             ))}
             {cntCat('none') > 0 && (
-              <button className={effCat === 'none' ? 'on' : ''} onClick={() => setFCat('none')}>구분 없음 {cntCat('none')}</button>
+              <button className={effCat === 'none' ? 'on' : ''} onClick={() => setFCat('none')}>구분 없음</button>
             )}
           </div>
         ) : <span />}
