@@ -12,9 +12,9 @@ import {
 } from '@/lib/postStore';
 import {
   ThreadWork, ThreadPost, THREAD_SEED, useThreadSettings, threadCats, catLabel, threadBadgeStyle, lastDate, fmtMD, fmtMDHM,
-  THR_POST_KEY, THR_POST_SEED, ThreadPostRow, MergedPost, postsOf, canWriteThreads, threadPartnerIds, inCharChoices,
+  THR_POST_KEY, THR_POST_SEED, ThreadPostRow, MergedPost, postsOf, canWriteThreads, threadPartnerIds,
 } from '@/lib/threadStore';
-import { Character, CHAR_SEED } from '@/lib/charStore';
+import { Character, CHAR_SEED, inCharChoices } from '@/lib/charStore';
 import { useMembers, type MemberLite } from '@/lib/members';
 import { useFonts } from '@/lib/fontStore';
 import { putBlob, BlobImg, useBlobUrl } from '@/lib/blobStore';

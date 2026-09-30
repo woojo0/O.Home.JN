@@ -20,7 +20,7 @@ import { getRawSetting, setSetting } from './settingStore';
 import { newId } from './postStore';
 
 export type SectionKind =
-  | 'gallery' | 'roadview' | 'trpg' | 'dotori' | 'playlog' | 'diary' | 'threads' | 'sched' | 'chars';
+  | 'gallery' | 'roadview' | 'trpg' | 'dotori' | 'playlog' | 'diary' | 'threads' | 'sched' | 'chars' | 'memo';
 
 /** 섹션 종류별 기본 정보 — 설정 탭 이름과 페이지 주소 */
 export const SECTION_META: Record<SectionKind, { label: string; href: string; defName: string }> = {
@@ -33,6 +33,8 @@ export const SECTION_META: Record<SectionKind, { label: string; href: string; de
   threads:  { label: '감상타래',  href: '/threads',  defName: '감상타래' },
   sched:    { label: '스케줄러',  href: '/cal',      defName: '스케줄러' },
   chars:    { label: '캐릭터',    href: '/chars',    defName: '캐릭터' },
+  // 스티키 메모 페이지 (커플홈 사용자 요청 — 메모판을 종류별 페이지로 나눈다)
+  memo:     { label: '메모장',    href: '/memo',     defName: '메모장' },
 };
 
 export const SECTION_KINDS = Object.keys(SECTION_META) as SectionKind[];

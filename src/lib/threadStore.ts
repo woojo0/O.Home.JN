@@ -76,9 +76,6 @@ export function canWriteThreads(chars: Character[], viewer: { isAdmin: boolean; 
 export const threadPartnerIds = (chars: Character[]): string[] =>
   [...new Set(chars.flatMap(c => (c.grants ?? []).map(g => g.userId)))];
 
-/** 이 회원이 캐입으로 쓸 수 있는 캐릭터 — 관리자는 자캐, 상대 오너는 권한 받은 캐릭터 */
-export const inCharChoices = (chars: Character[], viewer: { isAdmin: boolean; id?: string }): Character[] =>
-  chars.filter(c => (viewer.isAdmin && c.own) || (!!viewer.id && !!charGrant(c, viewer.id)));
 
 /* ---------- 분류 + 기본 보기 설정 (4.17 — 환경설정에서 관리) ---------- */
 /* 분류는 섹션(여러 개로 만든 타래)마다 따로 가질 수 있다 (v2.0 사용자 요청) */

@@ -14,6 +14,10 @@ export interface StickyMemo {
   z: number;                 // 겹침 순서
   size: 's' | 'm' | 'l';     // 크기
   date: string;              // ISO
+  /** 어느 메모장 페이지 것인지 (커플홈) — 없으면 기본 페이지 */
+  secId?: string;
+  /** 캐입 메모 (커플홈) — 이 캐릭터로 남긴 메모. author에는 쓸 당시 캐릭터 이름이 들어 있다 */
+  charId?: string;
 }
 
 export const MEMO_COLORS = ['#f4ecd7', '#dfe7dd', '#e7dfe4', '#dde4ea', '#efe3da'];

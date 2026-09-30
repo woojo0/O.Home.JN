@@ -29,7 +29,7 @@ const AREA: Record<string, { kind?: SectionKind; href?: string; board?: boolean 
   diary: { kind: 'diary' },
   threads: { kind: 'threads' },
   thread_posts: { kind: 'threads' },   // 글도 타래의 소속(secId)을 따라 메뉴 비공개 판정을 받는다
-  memos: { href: '/memo' },
+  memos: { kind: 'memo' },   // 메모장 페이지마다 메뉴 공개범위가 다를 수 있다 (커플홈 — 소속은 secId)
   rp_rooms: { href: '/rp' },
   characters: { kind: 'chars' },
   relations: { href: '/rels' },
