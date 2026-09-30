@@ -46,7 +46,7 @@ export default function RelNewPage() {
             id: v.slug ?? newId(),   // 지정한 페이지 주소 (v1.9) — 비우면 자동
             name: v.name, catchphrase: v.catchphrase, kind: v.kind,
             fontId: v.fontId, bodyFontId: v.bodyFontId, visibility: v.visibility,
-            titleSize: v.titleSize, titleBold: v.titleBold,
+            titleSize: v.titleSize, titleBold: v.titleBold, cpText: v.cpText,
             arts: v.arts, thumbId: v.arts[0], thumbCrop: v.thumbCrop,
             headerImgId: v.headerImgId, headerCrop: v.headerCrop,
             themeMode: v.themeMode, themeColor: v.themeColor, themeTone: v.themeTone,

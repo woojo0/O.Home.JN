@@ -926,7 +926,7 @@ export default function RelDetailPage() {
           <div className="cp-top">
             <span className="pill" style={auSt.cpTagBg || auSt.cpTagFg
               ? { background: auSt.cpTagBg, color: auSt.cpTagFg, borderColor: auSt.cpTagBg }
-              : undefined}>{CP_LABEL[auCpTag]}</span>
+              : undefined}>{((isBaseAu ? undefined : au?.cpText) ?? rel.cpText)?.trim() || CP_LABEL[auCpTag]}</span>
           </div>
         )}
         {/* 자관명·캐치프레이즈 글씨색 — 직접 지정 시 (v1.9 사용자 요청, 미지정: 테마) */}

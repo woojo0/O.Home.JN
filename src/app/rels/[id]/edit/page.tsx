@@ -50,7 +50,7 @@ function RelEditInner() {
             ...r,
             name: v.name, kind: v.kind, visibility: v.visibility,
             // 폰트는 AU 편집이면 그 AU에만 (v2.0 사용자 제보 — 여태 원본에 저장돼 전체가 같이 바뀌었다)
-            ...(auObj ? {} : { fontId: v.fontId, bodyFontId: v.bodyFontId, titleSize: v.titleSize, titleBold: v.titleBold }),
+            ...(auObj ? {} : { fontId: v.fontId, bodyFontId: v.bodyFontId, titleSize: v.titleSize, titleBold: v.titleBold, cpText: v.cpText }),
             // 헤더는 AU 편집이면 그 AU에만 저장 — base 헤더는 유지 (v1.9 AU별 헤더 분리)
             ...(auObj ? {} : { headerImgId: v.headerImgId, headerCrop: v.headerCrop, slug: v.slug }),
             // 페이지 테마 — AU 편집이면 그 AU에만 (base 테마는 유지, v1.9)
@@ -88,6 +88,7 @@ function RelEditInner() {
                   // AU별 폰트·전신 앞뒤 (v2.0 사용자 제보) — 원본이 아니라 이 AU에 담는다
                   fontId: v.fontId, bodyFontId: v.bodyFontId, fullFront: v.fullFront,
                   titleSize: v.titleSize, titleBold: v.titleBold,   // 자관명 크기·굵게 (커플홈)
+                  cpText: v.cpText,                                   // CP 뱃지 문구 (커플홈)
                   // AU별 색·배경 (v2.0 사용자 요청) — 「직접 지정」을 끄면 undefined가 되어
                   // 자관 값으로 되돌아간다(auStyle이 묶음 단위로 판정한다)
                   style: {

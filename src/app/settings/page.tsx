@@ -42,7 +42,7 @@ import { fileDrop } from '@/lib/dnd';
 import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relsWithoutChar } from '@/lib/charStore';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
-import { Mood, MOOD_SEED, moodTint } from '@/lib/diaryStore';
+import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat } from '@/lib/diaryStore';
 import {
   TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor,
 } from '@/components/main/widgetEditors';
@@ -63,7 +63,7 @@ import { SCHEMA_SQL } from '@/lib/schemaSql';
 
 const CATEGORIES = [
   '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '캐릭터', '자관 질문', 'TRPG', '감상타래', '메모장',
-  '폰트', '마우스 커서', 'BGM', '무드 리스트', '회원/보안', '데이터 백업',
+  '폰트', '마우스 커서', 'BGM', '다이어리', '회원/보안', '데이터 백업',
 ] as const;
 
 /** 색 항목 한 쌍 렌더 헬퍼 */
@@ -1366,6 +1366,44 @@ function SecurityRulesRow() {
 }
 
 /** 무드 리스트 탭 (5.2 — 다이어리 무드: 이름/아이콘/색 추가·수정·삭제·순서) */
+/** 다이어리 구분 탭 (커플홈 사용자 요청) — 무드 말고도 일기를 나눠 보는 탭. 이름 · ⠿ 순서 · 삭제 */
+function DiaryCatPane() {
+  const [dset, patch] = useDiarySettings();
+  const [diaries] = useLocalList<DiaryPost>('ohome.diary.v1', DIARY_SEED);
+  const del = useConfirmDelete();
+  const setCats = (cats: DiaryCat[]) => patch({ cats });
+  return (
+    <div className="set-sec" style={{ marginTop: 26 }}>
+      <h3>구분 탭</h3>
+      <div className="d">다이어리 위쪽에 탭으로 나오는 구분 — 일기를 쓸 때 고릅니다 · ⠿ 드래그로 순서</div>
+      <DragList items={dset.cats} keyOf={c => c.id} onReorder={setCats}
+        render={c => (
+          <div className="set-row" style={{ width: '100%' }}>
+            <div className="l" style={{ display: 'flex', gap: 11, alignItems: 'center' }}>
+              <span className="drag-h">⠿</span>
+              <KInput value={c.name} onChange={e => setCats(dset.cats.map(x => (x.id === c.id ? { ...x, name: e.target.value } : x)))}
+                style={{ width: 160 }} />
+            </div>
+            <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
+              <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>일기 {diaries.filter(d => d.catId === c.id).length}개</small>
+              <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                onClick={() => {
+                  const used = diaries.filter(d => d.catId === c.id).length;
+                  del.ask(`구분 「${c.name}」를 삭제하시겠습니까?`, () => setCats(dset.cats.filter(x => x.id !== c.id)),
+                    used > 0 ? `이 구분의 일기 ${used}개는 지워지지 않고 「구분 없음」으로 보입니다.` : undefined);
+                }}>DELETE</button>
+            </div>
+          </div>
+        )} />
+      <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end' }}>
+        <button className="btn btn-ghost" style={{ padding: '5px 12px', fontSize: 11 }}
+          onClick={() => setCats([...dset.cats, { id: newId(), name: '새 구분' }])}>＋ ADD</button>
+      </div>
+      {del.element}
+    </div>
+  );
+}
+
 function MoodPane() {
   const [moods, setMoods] = useLocalList<Mood>('ohome.moods.v1', MOOD_SEED);
   const [diaries] = useLocalList<DiaryPost>('ohome.diary.v1', DIARY_SEED);
@@ -3399,8 +3437,11 @@ function SettingsInner() {
             <ThreadPane />
           ) : tab === '메모장' ? (
             <MemoPane />
-          ) : tab === '무드 리스트' ? (
-            <MoodPane />
+          ) : tab === '다이어리' ? (
+            <>
+              <MoodPane />
+              <DiaryCatPane />
+            </>
           ) : tab === 'BGM' ? (
             <BgmPane />
           ) : tab === '폰트' ? (

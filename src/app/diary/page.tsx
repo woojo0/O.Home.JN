@@ -1,20 +1,31 @@
 'use client';
-// 다이어리 (4.14) — 아코디언 목록: 제목+무드+날짜 한 줄, 클릭 시 그 자리에서 펼침 ·
-// 무드 필터 · 페이지네이션 · 공개범위(비공개는 관리자만)
+// 다이어리 (4.14) — 아코디언 목록: 제목+무드+날짜 한 줄, 클릭 시 그 자리에서 펼침 · 공개범위(비공개는 관리자만)
+// 커플홈: 두 사람이 같이 쓰는 일기 — 대표 자관의 왼쪽/오른쪽 캐릭터 칸으로 반씩 나눠 쓴다.
+//   · 칸 머리의 ＋ WRITE는 그 캐릭터로 쓸 수 있는 사람에게만 (관리자는 자캐, 상대 오너는 권한 받은 캐릭터)
+//   · 구분 탭(환경설정 > 다이어리 — 「전체」 없이, 맨 위 구분이 처음 화면) + 무드 필터 · 칸마다 5개씩 페이지 · 댓글(캐입 가능)
+//   · 페어 자관이 없으면 예전처럼 한 칸
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useSectionParam, filterSection, sectionSetter } from '@/lib/sectionStore';
-import { useLocalList } from '@/lib/postStore';
-import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint } from '@/lib/diaryStore';
+import { useSectionParam, filterSection, sectionSetter, secQuery, sectionHref } from '@/lib/sectionStore';
+import { useLocalList, CommentRow, COMMENT_KEY, COMMENT_SEED } from '@/lib/postStore';
+import {
+  DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings,
+} from '@/lib/diaryStore';
+import {
+  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant,
+} from '@/lib/charStore';
+import { useFonts } from '@/lib/fontStore';
 import { renderBody } from '@/lib/sanitize';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { BlobImg } from '@/lib/blobStore';
+import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
+import { CharComments } from '@/components/ui/CharComments';
 
-const PAGE_SIZE = 10;
+type Side = 'l' | 'r' | 'one';
 
 function MoodIcon({ mood, size = 30 }: { mood?: Mood; size?: number }) {
   return (
@@ -50,6 +61,7 @@ function DiaryBody({ p, onOpen }: { p: DiaryPost; onOpen: (ids: string[], idx: n
 function DiaryPageInner() {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
+  const { familyOf } = useFonts();
   const [postsAll, setPostsAll, loaded] = useLocalList<DiaryPost>('ohome.diary.v1', DIARY_SEED);
   // 여러 개로 만든 섹션 (v2.0) — 주소의 ?s= 가 가리키는 것만 보여 준다
   const sec = useSectionParam('diary');
@@ -57,53 +69,161 @@ function DiaryPageInner() {
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setPosts = sectionSetter(postsAll, sec.id, setPostsAll);
   const [moods] = useLocalList<Mood>('ohome.moods.v1', MOOD_SEED);
+  const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
+  // 댓글 — 한 번만 불러 펼친 일기마다 나눠 준다 (게시판·타래와 같은 컬렉션, target 'diary')
+  const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  const [dset] = useDiarySettings();
   const [open, setOpen] = useState<string | null>(null);
   const [fMood, setFMood] = useState('all');
+  const [fCat, setFCat] = useState<string | null>(null);   // null = 아직 안 고름 → 맨 위 구분
   const [q, setQ] = useState('');
-  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState<Record<Side, number>>({ l: 1, r: 1, one: 1 });
   const [delFor, setDelFor] = useState<DiaryPost | null>(null);
   const [lb, setLb] = useState<{ srcs: string[]; idx: number } | null>(null); // 이미지 뷰어 (v1.9)
-  // 미니 캘린더 (4.14 달력 보기) — 달을 넘기면 그 달의 일기만 표시
-  const now = new Date();
-  const [view, setView] = useState<{ y: number; m: number }>({ y: now.getFullYear(), m: now.getMonth() });
-  const [monthFilter, setMonthFilter] = useState(false);
 
   // 메인 위젯에서 특정 일기로 진입 — /diary#id (4.14)
   useEffect(() => {
     const h = window.location.hash.slice(1);
     if (h) setOpen(h);
   }, [loaded]);
+  /* 구분 탭 — 「전체」는 없다 (커플홈 사용자 요청). 처음 화면은 환경설정에서 맨 위에 둔 구분.
+     구분이 하나도 없으면 탭 없이 전부, 구분 없는 일기는 「구분 없음」 탭(있을 때만)에서 본다 */
+  const effCat = dset.cats.length === 0 ? 'all'
+    : fCat === 'none' || (fCat && dset.cats.some(c => c.id === fCat)) ? fCat : dset.cats[0].id;
+  // 거르는 조건이 바뀌면 모든 칸을 첫 페이지부터
+  useEffect(() => { setPages({ l: 1, r: 1, one: 1 }); }, [fMood, effCat, q]);
 
   if (!loaded) return <section className="page" />;
 
+  /* ---------- 칸 나눔 — 대표 자관(이 사람이 열 수 있는 첫 자관)의 왼쪽·오른쪽 캐릭터 ---------- */
+  const rel = openableRels(rels, { isAdmin, loggedIn: !!user })[0];
+  const sides = pairSides(rel);
+  const charOf = (id?: string) => chars.find(c => c.id === id);
+  const choices = user ? inCharChoices(chars, { isAdmin, id: user.id }) : [];
+  const canWriteAs = (cid: string) => choices.some(c => c.id === cid);
+  /** 이 일기가 어느 칸인지 — 쓴 캐릭터로. 캐릭터 없이 쓴 예전 일기는 쓴 사람이 권한을 가진 쪽, 그다음 자캐 쪽 */
+  const sideOf = (p: DiaryPost): Side => {
+    if (!sides) return 'one';
+    if (p.charId === sides[0]) return 'l';
+    if (p.charId === sides[1]) return 'r';
+    const L = charOf(sides[0]);
+    const R = charOf(sides[1]);
+    if (p.authorId && R && charGrant(R, p.authorId)) return 'r';
+    if (p.authorId && L && charGrant(L, p.authorId)) return 'l';
+    return R?.own && !L?.own ? 'r' : 'l';
+  };
+
   const query = q.trim().toLowerCase();
-  const monthKey = `${view.y}-${String(view.m + 1).padStart(2, '0')}`;
-  const canSee = (p: DiaryPost) => isAdmin || (p.visibility === 'public' || (p.visibility === 'member' && !!user));
-  const visible = posts
-    .filter(canSee)
+  // 내가 쓴 나만보기 일기는 나에게도 보인다 (두 사람이 같이 쓰므로)
+  const canSee = (p: DiaryPost) => isAdmin || p.visibility === 'public'
+    || (p.visibility === 'member' && !!user) || (!!user && p.authorId === user.id);
+  const canEdit = (p: DiaryPost) => isAdmin || (!!user && p.authorId === user.id);
+  const seen = posts.filter(canSee);
+  const visible = seen
     .filter(p => fMood === 'all' || p.moodId === fMood)
+    .filter(p => effCat === 'all' || (effCat === 'none' ? !p.catId : p.catId === effCat))
     .filter(p => !query || p.title.toLowerCase().includes(query))
-    .filter(p => !monthFilter || p.date.startsWith(monthKey))
     .sort((a, b) => b.date.localeCompare(a.date));
 
-  // 캘린더 표시용 — 보이는 달의 일기 (일 → 글 목록)
-  const byDay = new Map<number, DiaryPost[]>();
-  posts.filter(canSee).filter(p => p.date.startsWith(monthKey)).forEach(p => {
-    const d = parseInt(p.date.slice(8, 10), 10);
-    byDay.set(d, [...(byDay.get(d) ?? []), p]);
-  });
-  const firstDay = new Date(view.y, view.m, 1).getDay();
-  const dim = new Date(view.y, view.m + 1, 0).getDate();
-  const mv = (d: number) => {
-    setView(v => { const nm = v.m + d; return { y: v.y + Math.floor(nm / 12), m: ((nm % 12) + 12) % 12 }; });
-    setMonthFilter(true); setPage(1);
-  };
-  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
-  const shown = visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const moodOf = (id: string) => moods.find(m => m.id === id);
-  const cnt = (mid: string) => posts
-    .filter(p => isAdmin || (p.visibility === 'public' || (p.visibility === 'member' && !!user)))
-    .filter(p => mid === 'all' || p.moodId === mid).length;
+  const catName = (id?: string) => dset.cats.find(c => c.id === id)?.name;
+  // 무드 숫자는 지금 보고 있는 구분 안에서 센다
+  const inCat = seen.filter(p => effCat === 'all' || (effCat === 'none' ? !p.catId : p.catId === effCat));
+  const cntMood = (mid: string) => inCat.filter(p => mid === 'all' || p.moodId === mid).length;
+  const cntCat = (cid: string) => seen.filter(p => cid === 'all' || (cid === 'none' ? !p.catId : p.catId === cid)).length;
+  // 쓰기 — 그 칸의 캐릭터와 지금 보고 있는 구분을 골라 둔 채로 연다
+  const writeHref = (cid?: string) => {
+    const qs = new URLSearchParams();
+    const s = new URLSearchParams(secQuery('diary', sec.id).slice(1)).get('s');
+    if (s) qs.set('s', s);
+    if (cid) qs.set('char', cid);
+    if (effCat !== 'all' && effCat !== 'none') qs.set('cat', effCat);
+    const str = qs.toString();
+    return `/diary/write${str ? `?${str}` : ''}`;
+  };
+  const listHref = sectionHref('diary', sec.id);
+
+  /** 일기 한 줄 (펼치면 본문 · 수정/삭제 · 댓글) */
+  const renderRow = (p: DiaryPost) => {
+    const m = moodOf(p.moodId);
+    const opened = open === p.id;
+    const cat = catName(p.catId);
+    return (
+      <div key={p.id} id={p.id} className={`dy-row ${opened ? 'open' : ''}`}>
+        {/* 접힘: 제목 세로 중앙 / 펼침: 위 정렬 (4.14 v1.8) */}
+        <div className="hd" onClick={() => setOpen(o => (o === p.id ? null : p.id))}>
+          <MoodIcon mood={m} />
+          <b className="tt">{p.title}</b>
+          {cat && <span className="pill" style={{ flexShrink: 0 }}>{cat}</span>}
+          {p.visibility !== 'public' && (
+            <span className="pill" style={{ flexShrink: 0 }}>{p.visibility === 'member' ? '멤버' : '비공개'}</span>
+          )}
+          <small className="dt">{p.date.replace(/-/g, '.')}{m ? ` · ${m.name}` : ''}</small>
+          <span className={`arr ${opened ? 'up' : ''}`} />
+        </div>
+        {/* 항상 렌더 + grid-rows 트랜지션으로 부드럽게 펼침 (덜컥임 방지) */}
+        <div className="dy-fold" aria-hidden={!opened}>
+          <div className="dy-fold-in">
+            <DiaryBody p={p} onOpen={(ids, idx) => setLb({ srcs: ids, idx })} />
+            {canEdit(p) && (
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', padding: '0 0 12px' }}>
+                <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
+                  onClick={() => router.push(`/diary/${p.id}/edit`)}>EDIT</button>
+                <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
+                  onClick={() => setDelFor(p)}>DELETE</button>
+              </div>
+            )}
+            {/* 댓글 — 펼쳤을 때만 그린다. 알림은 이 일기를 쓴 사람과 관리자에게 */}
+            {opened && (
+              <CharComments target="diary" targetId={p.id} rows={cmtRows} setRows={setCmtRows} chars={chars}
+                notify={{
+                  title: `「${p.title}」 일기에 새 댓글`, href: `${listHref}#${p.id}`,
+                  toIds: p.authorId ? [p.authorId] : [], admins: true,
+                }} />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /** 한 칸 — 머리(캐릭터 · ＋ WRITE) + 5개씩 페이지 */
+  const renderCol = (side: Side, cid?: string) => {
+    const list = visible.filter(p => sideOf(p) === side);
+    const total = Math.max(1, Math.ceil(list.length / DIARY_PER_PAGE));
+    const cur = Math.min(pages[side], total);
+    const shown = list.slice((cur - 1) * DIARY_PER_PAGE, cur * DIARY_PER_PAGE);
+    const ch = charOf(cid);
+    return (
+      <div className="dy-col" key={side}>
+        {side !== 'one' && (
+          <div className="dy-col-hd">
+            <span className="cf" style={{ background: ch?.color ?? 'var(--line)', ['--cc' as string]: ch?.color ?? 'var(--line)' }}>
+              {ch?.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
+            </span>
+            <b style={{ fontFamily: familyOf(ch?.fontId) ?? 'var(--serif-base)' }}>{ch?.name ?? '—'}</b>
+            <small>{list.length}</small>
+            {cid && canWriteAs(cid) && (
+              <button className="btn btn-dark" onClick={() => router.push(writeHref(cid))}>＋ WRITE</button>
+            )}
+          </div>
+        )}
+        <div className="panel" style={{ padding: '6px 20px' }}>
+          {shown.map(renderRow)}
+          {shown.length === 0 && <p className="hint" style={{ padding: 16 }}>{query ? '검색 결과가 없습니다' : '일기가 없습니다'}</p>}
+        </div>
+        {total > 1 && (
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
+            <Pager page={cur} total={total} onChange={n => setPages(s => ({ ...s, [side]: n }))} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 한 칸일 때 쓰기 — 관리자이거나 캐입할 캐릭터가 있는 사람
+  const canWriteOne = isAdmin || choices.length > 0;
 
   return (
     <section className="page">
@@ -112,113 +232,58 @@ function DiaryPageInner() {
         <EditableDesc k="diary-desc" def="무드 일기 — 클릭하면 그 자리에서 펼쳐집니다" />
       </div>
 
-      {/* 무드 필터 + 달 필터 표시 + 검색·WRITE — 필터 줄 오른쪽 정렬 (v1.9 사용자 요청).
-          그리드 밖(풀폭): 캘린더가 일기 패널과 같은 높이에서 시작 */}
-      <div className="toolrow" style={{ marginBottom: 16 }}>
-        <div className="tag-row">
-          <div className={`tag ${fMood === 'all' ? 'on' : ''}`} onClick={() => { setFMood('all'); setPage(1); }}>
-            전체 <small>{cnt('all')}</small>
+      {/* 구분 탭 (커플홈 — 환경설정 > 다이어리에서 관리 · 순서도 거기서) + 검색·WRITE */}
+      <div className="toolrow" style={{ marginBottom: 10 }}>
+        {dset.cats.length > 0 ? (
+          <div className="seg" style={{ flexWrap: 'wrap' }}>
+            {dset.cats.map(c => (
+              <button key={c.id} className={effCat === c.id ? 'on' : ''} onClick={() => setFCat(c.id)}>
+                {c.name} {cntCat(c.id)}
+              </button>
+            ))}
+            {cntCat('none') > 0 && (
+              <button className={effCat === 'none' ? 'on' : ''} onClick={() => setFCat('none')}>구분 없음 {cntCat('none')}</button>
+            )}
+          </div>
+        ) : <span />}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <SearchBar placeholder="제목 검색" onSearch={v => setQ(v)} />
+          {!sides && canWriteOne && <button className="btn btn-dark" onClick={() => router.push(writeHref())}>＋ WRITE</button>}
+        </div>
+      </div>
+
+      {/* 무드 필터 */}
+      {moods.length > 0 && (
+        <div className="tag-row" style={{ marginBottom: 16 }}>
+          <div className={`tag ${fMood === 'all' ? 'on' : ''}`} onClick={() => setFMood('all')}>
+            전체 <small>{cntMood('all')}</small>
           </div>
           {moods.map(m => (
-            <div key={m.id} className={`tag ${fMood === m.id ? 'on' : ''}`} onClick={() => { setFMood(m.id); setPage(1); }}>
-              <span style={{ color: m.color }}>{m.icon}</span> {m.name} <small>{cnt(m.id)}</small>
+            <div key={m.id} className={`tag ${fMood === m.id ? 'on' : ''}`} onClick={() => setFMood(m.id)}>
+              <span style={{ color: m.color }}>{m.icon}</span> {m.name} <small>{cntMood(m.id)}</small>
             </div>
           ))}
-          {monthFilter && (
-            <div className="tag on" onClick={() => { setMonthFilter(false); setPage(1); }}
-              data-tip="달 필터 해제">
-              {view.y}.{String(view.m + 1).padStart(2, '0')} ✕
-            </div>
-          )}
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <SearchBar placeholder="제목 검색" onSearch={v => { setQ(v); setPage(1); }} />
-          {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/diary/write')}>＋ WRITE</button>}
-        </div>
-      </div>
+      )}
 
-      {/* 좌 리스트 + 우 미니 캘린더 (4.14 달력 보기) — 두 패널 시작 높이 동일 */}
-      <div className="dy-layout">
-      <div>
-      <div className="panel" style={{ padding: '6px 20px' }}>
-        {shown.map(p => {
-          const m = moodOf(p.moodId);
-          const opened = open === p.id;
-          return (
-            <div key={p.id} id={p.id} className={`dy-row ${opened ? 'open' : ''}`}>
-              {/* 접힘: 제목 세로 중앙 / 펼침: 위 정렬 (4.14 v1.8) */}
-              <div className="hd" onClick={() => setOpen(o => (o === p.id ? null : p.id))}>
-                <MoodIcon mood={m} />
-                <b className="tt">{p.title}</b>
-                {p.visibility !== 'public' && (
-                  <span className="pill" style={{ flexShrink: 0 }}>{p.visibility === 'member' ? '멤버' : '비공개'}</span>
-                )}
-                <small className="dt">{p.date.replace(/-/g, '.')}{m ? ` · ${m.name}` : ''}</small>
-                <span className={`arr ${opened ? 'up' : ''}`} />
-              </div>
-              {/* 항상 렌더 + grid-rows 트랜지션으로 부드럽게 펼침 (덜컥임 방지) */}
-              <div className="dy-fold" aria-hidden={!opened}>
-                <div className="dy-fold-in">
-                  <DiaryBody p={p} onOpen={(ids, idx) => setLb({ srcs: ids, idx })} />
-                  {isAdmin && (
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', padding: '0 0 14px' }}>
-                      <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
-                        onClick={() => router.push(`/diary/${p.id}/edit`)}>EDIT</button>
-                      <button className="btn btn-ghost" style={{ padding: '4px 11px', fontSize: 10.5 }}
-                        onClick={() => setDelFor(p)}>DELETE</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {shown.length === 0 && <p className="hint" style={{ padding: 16 }}>{query ? '검색 결과가 없습니다' : '일기가 없습니다'}</p>}
-      </div>
-
-      <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
-        <Pager page={page} total={totalPages} onChange={setPage} />
-      </div>
-      </div>
-
-      {/* 우: 미니 캘린더 — 일기 쓴 날은 무드색 점, 달을 넘기면 그 달만 목록에 */}
-      <div className="panel dy-cal">
-        <div className="hd">
-          <button type="button" onClick={() => mv(-1)}>‹</button>
-          <b>{view.y}년 {view.m + 1}월</b>
-          <button type="button" onClick={() => mv(1)}>›</button>
-        </div>
-        <div className="wk">{['일', '월', '화', '수', '목', '금', '토'].map(w => <span key={w}>{w}</span>)}</div>
-        <div className="days">
-          {Array.from({ length: firstDay }, (_, i) => <span key={`e${i}`} />)}
-          {Array.from({ length: dim }, (_, i) => {
-            const d = i + 1;
-            const entries = byDay.get(d);
-            return (
-              <button type="button" key={d} className={entries ? 'has' : ''}
-                data-tip={entries ? entries.map(p => p.title).join(' · ') : undefined}
-                onClick={() => {
-                  if (!entries) return;
-                  setMonthFilter(true); setPage(1); setOpen(entries[0].id);
-                }}>
-                {d}
-                <span className="dots">
-                  {(entries ?? []).slice(0, 2).map(p => (
-                    <i key={p.id} style={{ background: moodOf(p.moodId)?.color ?? 'var(--faint)' }} />
-                  ))}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      </div>
+      {/* 왼쪽 캐릭터 칸 | 오른쪽 캐릭터 칸 — 자관 상세와 같은 좌우 (좌우 바꾸기 반영). 페어가 아니면 한 칸 */}
+      {sides
+        ? <div className="dy-split">{renderCol('l', sides[0])}{renderCol('r', sides[1])}</div>
+        : renderCol('one')}
 
       <ConfirmModal open={delFor !== null} title="일기를 삭제하시겠습니까?"
         body={`"${delFor?.title}" — 삭제하면 복구할 수 없습니다.`}
         onClose={() => setDelFor(null)}
         buttons={[
-          { label: 'DELETE', kind: 'accent', onClick: () => { setPosts(posts.filter(x => x.id !== delFor!.id)); setDelFor(null); } },
+          { label: 'DELETE', kind: 'accent', onClick: () => {
+            const gone = delFor!;
+            setPosts(posts.filter(x => x.id !== gone.id));
+            // 달린 댓글도 함께 — 남의 댓글은 관리자만 지울 수 있어, 관리자가 아니면 내 댓글만 정리한다
+            const drop = (c: CommentRow) => c.target === 'diary' && c.targetId === gone.id
+              && (isAdmin || c.authorId === user?.id);
+            if (cmtRows.some(drop)) setCmtRows(cmtRows.filter(c => !drop(c)));
+            setDelFor(null);
+          } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelFor(null) },
         ]} />
       {/* 이미지 뷰어 — 썸네일 클릭 시 (v1.9 사용자 확정) */}

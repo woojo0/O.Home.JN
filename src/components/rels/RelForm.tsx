@@ -52,6 +52,7 @@ export interface RelFormValue {
   themeColor?: string;          // 별도 테마컬러 (custom일 때)
   themeTone?: 'dark' | 'light'; // 테마컬러의 다크/라이트 느낌
   cp: RelCpTag;              // CP/NCP (v1.9) — AU별로는 AU 관리에서 따로 지정
+  cpText?: string;           // CP 뱃지 문구 (커플홈) — 비우면 CP/NCP
   fulls?: Record<string, string | undefined>;  // 멤버별 전신 이미지 (v1.9 — charId → blob id)
   fullScales?: Record<string, number>;         // 전신 크기 % (휠 조절)
   fullOffsets?: Record<string, { x: number; y: number }>; // 전신 위치 오프셋 % (드래그, v1.9)
@@ -181,6 +182,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [catchphrase, setCatchphrase] = useState(auObj ? auObj.catchphrase : (initial?.catchphrase ?? ''));
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
   const [cp, setCp] = useState<RelCpTag>(initial?.cp ?? 'cp');   // CP/NCP (v1.9)
+  // CP 뱃지 문구 (커플홈 사용자 요청) — AU 편집이면 그 AU 문구, 없으면 자관 기본. 비우면 CP/NCP
+  const [cpText, setCpText] = useState((auObj?.cpText ?? initial?.cpText) ?? '');
   // AU 편집이면 그 AU에 정한 폰트부터 (v2.0 사용자 제보 — AU 폰트가 분리되지 않던 것)
   const [fontId, setFontId] = useState((auObj?.fontId ?? initial?.fontId) ?? 'serif');
   // 자관명 크기·굵게 (커플홈 사용자 요청) — AU 편집이면 그 AU 값, 없으면 자관 기본
@@ -353,7 +356,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       themeMode,
       themeColor: themeMode === 'custom' ? themeColor : undefined,
       themeTone: themeMode === 'custom' ? themeTone : undefined,
-      cp,
+      cp, cpText: cpText.trim() || undefined,
       auName: auObj ? auName.trim() : undefined,
       qaHide: qaHide || undefined,
       fulls: pairMembers.length
@@ -727,6 +730,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                 ))}
               </div>
             </div>
+            {/* 뱃지 문구 (커플홈 사용자 요청) — 자관명 위 뱃지에 CP/NCP 대신 쓸 글. 비우면 CP/NCP */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span className="cp-lb">뱃지 문구</span>
+              <KInput placeholder={`비우면 ${CP_LABEL[cp]}`} value={cpText} maxLength={24}
+                onChange={e => setCpText(e.target.value)} style={{ flex: 1 }} />
+            </div>
             {/* 뱃지 색 (v2.0 사용자 요청) — 자관명 위에 뜨는 CP/NCP 표시. AU마다 따로 */}
             {(
               <div>
@@ -742,7 +751,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                     <div className="cf-row">
                       <span className="cp-lb">미리보기</span>
                       <span className="pill" style={{ background: cpTagBg, color: cpTagFg, borderColor: cpTagBg }}>
-                        {CP_LABEL[cp]}
+                        {cpText.trim() || CP_LABEL[cp]}
                       </span>
                     </div>
                   </div>

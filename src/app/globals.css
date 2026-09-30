@@ -1282,6 +1282,20 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dy-cal .dots i{width:4px;height:4px;border-radius:50%}
 
 /* ---------- 다이어리 (4.14) — 아코디언 목록 ---------- */
+/* 다이어리 두 칸 (커플홈) — 대표 자관의 왼쪽 캐릭터 | 오른쪽 캐릭터. 좁은 화면에서는 위아래 */
+.dy-split{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.dy-col{min-width:0}
+.dy-col-hd{display:flex;align-items:center;gap:9px;margin:0 4px 10px}
+.dy-col-hd .cf{width:28px;height:28px;border-radius:50%;overflow:hidden;position:relative;flex-shrink:0;box-shadow:0 0 0 2px var(--cc)}
+.dy-col-hd b{font-size:calc(16px*var(--fs,1));letter-spacing:.12em;color:var(--page-title,var(--ink))}
+.dy-col-hd small{color:var(--faint);font-size:calc(11px*var(--fs,1))}
+.dy-col-hd .btn{margin-left:auto}
+@media (max-width:760px){.dy-split{grid-template-columns:1fr}}
+/* 캐입 댓글 묶음 (커플홈 — 다이어리처럼 펼친 글 안에서) */
+.char-cmts{border-top:1px dashed var(--line);padding:12px 0 6px}
+.char-cmts h4{font-size:calc(11px*var(--fs,1));letter-spacing:.12em;color:var(--faint);margin-bottom:10px}
+.char-cmts h4 span{color:var(--accent)}
+.char-cmts .cmt-input{padding:10px 0 4px;border-top:none}
 .dy-row{border-bottom:1px dashed var(--line)}
 .dy-row:last-child{border-bottom:none}
 /* 접힘: 제목 세로 중앙 / 펼침: 위 정렬 (v1.8) — 패딩은 일정하게 유지해 점프 방지 */

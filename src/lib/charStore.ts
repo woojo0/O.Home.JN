@@ -341,6 +341,7 @@ export interface RelAu {
   mset?: Record<string, RelAuMember>;
   quotes?: string[];
   cp?: RelCpTag;          // 없으면 자관 기본(Relation.cp)
+  cpText?: string;        // AU별 CP 뱃지 문구 (커플홈) — 없으면 자관 기본, 그것도 없으면 CP/NCP
   arts?: string[];        // AU별 중앙/그룹 일러 (base는 Relation.arts)
   timeline?: TlItem[];    // base는 Relation.timeline
   questions?: QaEntry[];  // base는 Relation.questions
@@ -401,6 +402,7 @@ export interface Relation {
   illustMode: 'duo' | 'one';     // 2인: 전신 2장 / 일러 1장 (v1.8)
   aus: RelAu[];                  // AU 리스트 (첫 항목 = 원본 base)
   cp?: RelCpTag;                 // 자관 기본 CP/NCP (등록 시 선택, v1.9)
+  cpText?: string;               // CP 뱃지 문구 (커플홈 사용자 요청) — 비우면 CP/NCP 그대로
   fullFront?: string;            // 전신 모드에서 앞에 보일 캐릭터 id (v1.9 — 미리보기에서 클릭 선택)
   pairRight?: string;            // 페어에서 오른쪽 자리에 둘 캐릭터 id (v2.0 — 없으면 등록 순서대로)
   /** 상세 중앙 일러가 어디를 보여 줄지 (v2.0 사용자 요청) — 리스트 썸네일(thumbCrop)과 별개.
@@ -432,6 +434,20 @@ export const findByKey = <T extends { id: string; slug?: string }>(list: T[], ke
 export const charPath = (c: { id: string; slug?: string }) => `/chars/${c.slug?.trim() || c.id}`;
 /** 이 자관의 주소 — 별명을 정했으면 그것, 아니면 id */
 export const relPath = (r: { id: string; slug?: string }) => `/rels/${r.slug?.trim() || r.id}`;
+
+/** 페어 자관의 [왼쪽, 오른쪽] 캐릭터 id — 상세에서 좌우를 바꿨으면(pairRight) 그 자리대로.
+ *  페어가 아니거나 멤버가 둘이 안 되면 null (커플홈 — 다이어리 칸 나눔 등이 상세와 같은 배치를 쓴다) */
+export function pairSides(rel?: Relation): [string, string] | null {
+  if (!rel) return null;
+  const isPair = rel.kind ? rel.kind === 'pair' : rel.members.length === 2;
+  if (!isPair || rel.members.length < 2) return null;
+  const [a, b] = rel.members;
+  if (rel.pairRight && rel.members.some(m => m.charId === rel.pairRight)) {
+    const right = rel.pairRight;
+    return [(a.charId === right ? b : a).charId, right];
+  }
+  return [a.charId, b.charId];
+}
 
 /* ---------- 커플홈 — 자관 목록 페이지 없이 대표 자관으로 ---------- */
 /** 이 방문자가 열 수 있는 자관 (저장 순서 그대로) — 관리자는 전부, 회원은 나만보기 제외, 방문자는 전체공개만.
