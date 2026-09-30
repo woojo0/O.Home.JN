@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
 import { useSectionTitle } from '@/lib/sectionStore';
-import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, useDiarySettings } from '@/lib/diaryStore';
+import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, useDiarySettings, diaryDraftKey } from '@/lib/diaryStore';
 import { Character, CHAR_SEED, inCharChoices } from '@/lib/charStore';
 import { DiaryForm } from '@/components/diary/DiaryForm';
 import { useToast } from '@/components/ui/Toast';
@@ -42,6 +42,7 @@ export default function DiaryEditPage() {
     <section className="page">
       <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>{p.title}</p></div>
       <DiaryForm initial={p} moods={moods} cats={dset.cats} charChoices={choices} lockChar={lockChar}
+        draftKey={diaryDraftKey(user?.id, p.id)}
         onCancel={() => router.push(tt.href)}
         onSave={v => {
           setPosts(posts.map(x => (x.id === p.id ? { ...x, ...v } : x)));

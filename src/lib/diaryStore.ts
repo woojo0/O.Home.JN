@@ -71,5 +71,32 @@ export function useDiarySettings(): [DiarySettings, (patch: Partial<DiarySetting
   return [st, patch, loaded];
 }
 
+/* ---------- 임시 저장 (커플홈 사용자 요청 — 「일기 내용 중간 세이브 · 5분 간격 자동 저장」) ----------
+   쓰던 일기를 이 브라우저(localStorage)에 남겨 둔다. 서버에 올리지 않으니 다른 기기에서는 안 보이고,
+   등록·저장을 마치면 지운다. 새로 고른 이미지 파일은 담지 못한다 (이미 올라간 이미지는 id로 남긴다) */
+export const DIARY_DRAFT_EVERY = 5 * 60 * 1000;
+export interface DiaryDraft {
+  title: string; date: string; moodId: string; body: string;
+  imgIds: string[]; visibility: Visibility; charId?: string; catId?: string;
+  savedAt: string;   // ISO — 화면에 「몇 시에 저장됨」으로 보인다
+}
+/** 저장 자리 — 회원마다, 그리고 새 일기(다이어리별)·고치는 일기(글 id)마다 따로 */
+export const diaryDraftKey = (userId: string | undefined, target: string) =>
+  `ohome.diarydraft.v1:${userId || 'anon'}:${target}`;
+export function loadDiaryDraft(key: string): DiaryDraft | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    return d && typeof d.savedAt === 'string' && typeof d.title === 'string' ? { ...d, imgIds: Array.isArray(d.imgIds) ? d.imgIds : [] } : null;
+  } catch { return null; }
+}
+export function saveDiaryDraft(key: string, d: DiaryDraft) {
+  try { localStorage.setItem(key, JSON.stringify(d)); } catch { /* 저장 공간 부족 등 — 조용히 넘어간다 */ }
+}
+export function clearDiaryDraft(key: string) {
+  try { localStorage.removeItem(key); } catch { /* 무시 */ }
+}
+
 /** hex(#rrggbb) → 옅은 틴트 배경 (아이콘 원 배경용) */
 export const moodTint = (hex: string) => /^#[0-9a-fA-F]{6}$/.test(hex) ? `${hex}26` : 'rgba(127,127,127,.15)';

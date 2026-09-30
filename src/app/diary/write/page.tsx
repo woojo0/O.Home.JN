@@ -6,7 +6,7 @@ import React, { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
-import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, useDiarySettings } from '@/lib/diaryStore';
+import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, useDiarySettings, diaryDraftKey } from '@/lib/diaryStore';
 import { Character, CHAR_SEED, inCharChoices } from '@/lib/charStore';
 import { useSectionParam, secStamp, sectionHref } from '@/lib/sectionStore';
 import { DiaryForm } from '@/components/diary/DiaryForm';
@@ -41,6 +41,7 @@ function DiaryWriteInner() {
     <section className="page">
       <div className="page-head"><PageTitle>WRITE DIARY</PageTitle><EditableDesc k="diary-write-desc" def="일기 쓰기" /></div>
       <DiaryForm initial={null} moods={moods} cats={dset.cats} charChoices={choices} initialCharId={wantChar} initialCatId={wantCat}
+        draftKey={diaryDraftKey(user?.id, `new:${sec.id}`)}
         onCancel={() => router.push(listHref)}
         onSave={v => {
           // 쓴 사람을 남긴다 — 두 사람이 같이 쓰므로 수정·삭제 권한과 칸 판정에 쓴다

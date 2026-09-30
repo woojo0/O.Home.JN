@@ -1300,6 +1300,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .dy-col-hd small{color:var(--faint);font-size:calc(11px*var(--fs,1))}
 .dy-col-hd .btn{margin-left:auto}
 @media (max-width:760px){.dy-split{grid-template-columns:1fr}}
+/* 일기 임시 저장 (커플홈) — 쓰기 화면 오른쪽 위젯의 「버리기」 */
+.dy-draft .lnk{color:var(--accent);cursor:var(--cur-pointer,pointer)}
+.dy-draft .lnk:hover{text-decoration:underline}
 /* 캐입 댓글 묶음 (커플홈 — 다이어리처럼 펼친 글 안에서) */
 .char-cmts{border-top:1px dashed var(--line);padding:12px 0 6px}
 .char-cmts h4{font-size:calc(11px*var(--fs,1));letter-spacing:.12em;color:var(--faint);margin-bottom:10px}
