@@ -5,7 +5,7 @@
 //   · 구분 탭(환경설정 > 다이어리 — 「전체」 없이, 맨 위 구분이 처음 화면) · 칸마다 5개씩 페이지 · 댓글(캐입 가능)
 //   · 무드는 일기마다 붙는 표시로만 — 거르는 탭은 두지 않는다 (탭이 두 종류면 복잡하다, 커플홈 사용자 요청)
 //   · 페어 자관이 없으면 예전처럼 한 칸
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery, sectionHref } from '@/lib/sectionStore';
@@ -75,27 +75,20 @@ function DiaryPageInner() {
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   // 댓글 — 한 번만 불러 펼친 일기마다 나눠 준다 (게시판·타래와 같은 컬렉션, target 'diary')
   const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
-  const [dset] = useDiarySettings();
-  const [open, setOpen] = useState<string | null>(null);
+  const [dset, , dsetLoaded] = useDiarySettings();
+  // 펼친 일기 — 칸마다 하나씩 (커플홈 사용자 요청: 양쪽을 다 열어 둘 수 있고, 같은 칸의 다른 일기를 누르면 그쪽만 바뀐다)
+  const [open, setOpen] = useState<Record<Side, string | null>>({ l: null, r: null, one: null });
   const [fCat, setFCat] = useState<string | null>(null);   // null = 아직 안 고름 → 맨 위 구분
   const [q, setQ] = useState('');
   const [pages, setPages] = useState<Record<Side, number>>({ l: 1, r: 1, one: 1 });
   const [delFor, setDelFor] = useState<DiaryPost | null>(null);
   const [lb, setLb] = useState<{ srcs: string[]; idx: number } | null>(null); // 이미지 뷰어 (v1.9)
 
-  // 메인 위젯에서 특정 일기로 진입 — /diary#id (4.14)
-  useEffect(() => {
-    const h = window.location.hash.slice(1);
-    if (h) setOpen(h);
-  }, [loaded]);
   /* 구분 탭 — 「전체」는 없다 (커플홈 사용자 요청). 처음 화면은 환경설정에서 맨 위에 둔 구분.
      구분이 하나도 없으면 탭 없이 전부, 구분 없는 일기는 「구분 없음」 탭(있을 때만)에서 본다 */
   const effCat = dset.cats.length === 0 ? 'all'
     : fCat === 'none' || (fCat && dset.cats.some(c => c.id === fCat)) ? fCat : dset.cats[0].id;
-  // 거르는 조건이 바뀌면 모든 칸을 첫 페이지부터
-  useEffect(() => { setPages({ l: 1, r: 1, one: 1 }); }, [effCat, q]);
-
-  if (!loaded) return <section className="page" />;
+  const jumpRef = useRef<string | null>(null);   // #id로 들어온 일기 — 그 일기가 보이는 페이지로 옮길 때까지 기억
 
   /* ---------- 칸 나눔 — 이 다이어리에 연결한 자관(환경설정 > 다이어리)의 왼쪽·오른쪽 캐릭터.
      연결하지 않았거나 그 자관이 없어졌으면 이 사람이 열 수 있는 첫 자관 ---------- */
@@ -128,6 +121,33 @@ function DiaryPageInner() {
     .filter(p => !query || p.title.toLowerCase().includes(query))
     .sort((a, b) => b.date.localeCompare(a.date));
 
+  // 메인 위젯·알림에서 특정 일기로 진입 — /diary#id (4.14). 그 일기가 있는 칸에서 펼치고, 구분 탭도 그 일기 쪽으로
+  useEffect(() => {
+    if (!loaded || !dsetLoaded) return;
+    const h = window.location.hash.slice(1);
+    const p = h ? posts.find(x => x.id === h) : undefined;
+    if (!p) return;
+    jumpRef.current = p.id;
+    setOpen(o => ({ ...o, [sideOf(p)]: p.id }));
+    if (dset.cats.length) setFCat(p.catId && dset.cats.some(c => c.id === p.catId) ? p.catId : 'none');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, dsetLoaded]);
+  // 거르는 조건이 바뀌면 모든 칸을 첫 페이지부터 — #id로 들어온 일기가 있으면 그 일기가 있는 페이지로
+  useEffect(() => {
+    const t = jumpRef.current;
+    const p = t ? posts.find(x => x.id === t) : undefined;
+    const side = p ? sideOf(p) : null;
+    const idx = p && side ? visible.filter(x => sideOf(x) === side).findIndex(x => x.id === t) : -1;
+    if (p && side && idx >= 0) {
+      jumpRef.current = null;
+      setPages({ l: 1, r: 1, one: 1, [side]: Math.floor(idx / DIARY_PER_PAGE) + 1 });
+      setTimeout(() => document.getElementById(p.id)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 350);
+    } else setPages({ l: 1, r: 1, one: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effCat, q, loaded, dsetLoaded]);
+
+  if (!loaded) return <section className="page" />;
+
   const moodOf = (id: string) => moods.find(m => m.id === id);
   const catName = (id?: string) => dset.cats.find(c => c.id === id)?.name;
   const cntCat = (cid: string) => seen.filter(p => cid === 'all' || (cid === 'none' ? !p.catId : p.catId === cid)).length;
@@ -144,14 +164,14 @@ function DiaryPageInner() {
   const listHref = sectionHref('diary', sec.id);
 
   /** 일기 한 줄 (펼치면 본문 · 수정/삭제 · 댓글) */
-  const renderRow = (p: DiaryPost) => {
+  const renderRow = (p: DiaryPost, side: Side) => {
     const m = moodOf(p.moodId);
-    const opened = open === p.id;
+    const opened = open[side] === p.id;
     const cat = catName(p.catId);
     return (
       <div key={p.id} id={p.id} className={`dy-row ${opened ? 'open' : ''}`}>
         {/* 접힘: 제목 세로 중앙 / 펼침: 위 정렬 (4.14 v1.8) */}
-        <div className="hd" onClick={() => setOpen(o => (o === p.id ? null : p.id))}>
+        <div className="hd" onClick={() => setOpen(o => ({ ...o, [side]: o[side] === p.id ? null : p.id }))}>
           <MoodIcon mood={m} />
           <b className="tt">{p.title}</b>
           {cat && <span className="pill" style={{ flexShrink: 0 }}>{cat}</span>}
@@ -217,7 +237,7 @@ function DiaryPageInner() {
           </div>
         )}
         <div className="panel" style={{ padding: '6px 20px' }}>
-          {shown.map(renderRow)}
+          {shown.map(p => renderRow(p, side))}
           {shown.length === 0 && <p className="hint" style={{ padding: 16 }}>{query ? '검색 결과가 없습니다' : '일기가 없습니다'}</p>}
         </div>
         {total > 1 && (
