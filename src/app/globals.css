@@ -1548,7 +1548,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .single-viewer:hover .nav{opacity:1}
 .single-viewer .nav:hover{background:rgba(15,17,20,.75)}
 .thumb-strip{display:flex;gap:8px;margin-top:10px;justify-content:center}
-.thumb-strip .t{width:64px;height:48px;border-radius:8px;overflow:hidden;cursor:var(--cur-pointer,pointer);opacity:.6;transition:.15s;border:2px solid transparent}
+.thumb-strip .t{width:64px;height:48px;border-radius:8px;overflow:hidden;cursor:var(--cur-pointer,pointer);opacity:.6;transition:.15s;border:2px solid transparent;display:flex;align-items:center;justify-content:center}
+/* 썸네일 안의 그림은 칸 가운데에 통째로 (커플홈 사용자 요청 — 위에 붙어 아래가 비거나 잘렸다) */
+.thumb-strip .t img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.thumb-strip .t .ph{width:100%;height:100%}
 .thumb-strip .t:hover{opacity:1}
 /* 선택된 썸네일 — 표정 스트립과 같은 기준(디자인 탭 「입력 포커스」) */
 .thumb-strip .t.on{opacity:1;border-color:var(--focus-bd,var(--accent));box-shadow:var(--focus-ring,none)}
