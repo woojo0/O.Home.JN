@@ -16,7 +16,7 @@ import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEdi
 import { CroppedBlobImg, CropValue } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { RoadItem, ROAD_SEED, BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
-import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint } from '@/lib/diaryStore';
+import { DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, diaryOrder } from '@/lib/diaryStore';
 import { useSched, eventColor } from '@/lib/schedStore';
 import { StickyMemo, MEMO_SEED, MEMO_SIZE_W, useMemoSettings } from '@/lib/memoStore';
 import { BlobImg, useBlobUrl } from '@/lib/blobStore';
@@ -173,7 +173,7 @@ export function DiaryWidget() {
   const latest = posts
     .filter(p => canViewHref(menuSet, sectionHref('diary', p.secId ?? MAIN_SEC), viewer))
     .filter(p => p.visibility === 'public' || (p.visibility === 'member' && !!user))
-    .sort((a, b) => b.date.localeCompare(a.date))
+    .sort(diaryOrder)   // 다이어리 페이지와 같은 순서 — 같은 날은 쓴 순서
     .slice(0, 3);
   if (!canSee) return null;   // 메뉴가 비공개면 위젯 자체를 띄우지 않는다 (v2.0)
   return (

@@ -45,7 +45,7 @@ function DiaryWriteInner() {
         onCancel={() => router.push(listHref)}
         onSave={v => {
           // 쓴 사람을 남긴다 — 두 사람이 같이 쓰므로 수정·삭제 권한과 칸 판정에 쓴다
-          const p: DiaryPost = { id: newId(), ...v, authorId: user?.id, ...secStamp(sec.id) };
+          const p: DiaryPost = { id: newId(), ...v, authorId: user?.id, createdAt: new Date().toISOString(), ...secStamp(sec.id) };
           setPosts([p, ...posts]);
           toast('일기가 등록되었습니다');
           router.push(listHref);

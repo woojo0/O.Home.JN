@@ -32,9 +32,23 @@ export interface DiaryPost {
   authorId?: string;
   /** 구분 탭 (커플홈 — 환경설정 > 다이어리에서 관리) — 없으면 구분 없음 */
   catId?: string;
+  /** 쓴 시각 (ISO, 커플홈) — 같은 날짜의 일기를 쓴 순서대로 놓기 위해. 없는 옛 일기는 id에 든 시각으로 */
+  createdAt?: string;
 }
 
 export const DIARY_SEED: DiaryPost[] = [];
+
+/** 쓴 시각 (ms) — createdAt이 없는 옛 일기는 id 앞부분(newId가 넣는 36진수 시각)으로 */
+export function diaryWrittenAt(p: DiaryPost): number {
+  if (p.createdAt) { const t = Date.parse(p.createdAt); if (Number.isFinite(t)) return t; }
+  const n = parseInt(p.id.slice(0, 8), 36);
+  return Number.isFinite(n) ? n : 0;
+}
+/** 목록 순서 — 일기 날짜(최신이 위), 같은 날이면 쓴 순서(나중에 쓴 것이 위).
+ *  (커플홈 사용자 제보 — 「고치니까 순서가 바뀐 것 같다」: 날짜만으로는 같은 날 일기의 순서가
+ *  저장 순서(sort)에 달려 있어, 두 사람이 각자 저장할 때마다 뒤바뀔 수 있었다) */
+export const diaryOrder = (a: DiaryPost, b: DiaryPost) =>
+  b.date.localeCompare(a.date) || diaryWrittenAt(b) - diaryWrittenAt(a);
 
 /** 한 페이지에 보일 일기 수 (커플홈 사용자 요청 — 달별 나눔 대신 페이지로) */
 export const DIARY_PER_PAGE = 5;

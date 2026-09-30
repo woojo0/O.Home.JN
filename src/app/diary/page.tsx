@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery, sectionHref } from '@/lib/sectionStore';
 import { useLocalList, CommentRow, COMMENT_KEY, COMMENT_SEED } from '@/lib/postStore';
 import {
-  DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings,
+  DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings, diaryOrder,
 } from '@/lib/diaryStore';
 import {
   Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath,
@@ -119,7 +119,7 @@ function DiaryPageInner() {
   const visible = seen
     .filter(p => effCat === 'all' || (effCat === 'none' ? !p.catId : p.catId === effCat))
     .filter(p => !query || p.title.toLowerCase().includes(query))
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort(diaryOrder);
 
   // 메인 위젯·알림에서 특정 일기로 진입 — /diary#id (4.14). 그 일기가 있는 칸에서 펼치고, 구분 탭도 그 일기 쪽으로
   useEffect(() => {
