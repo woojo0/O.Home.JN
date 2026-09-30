@@ -12,6 +12,7 @@ import {
 import { Character, CHAR_SEED, inCharChoices } from '@/lib/charStore';
 import { useSectionParam, useSections, filterSection, sectionSetter, sectionHref, MAIN_SEC } from '@/lib/sectionStore';
 import { useMenuSettings, canViewHref } from '@/lib/menuStore';
+import { useFonts } from '@/lib/fontStore';
 import { fmtMD } from '@/lib/threadStore';
 import { Modal, useConfirmDelete } from '@/components/ui/Modal';
 import { KTextarea, KInput, KSelect } from '@/components/ui/Kit';
@@ -19,12 +20,17 @@ import { ColorField } from '@/components/ui/ColorField';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 
-/** 메모에 적힌 이름 — 캐입 메모면 캐릭터(테마색 점 + 이름), 아니면 쓴 사람.
- *  캐릭터가 지워졌으면 쓸 당시 이름(author)으로 */
+/** 메모에 적힌 이름 — 캐입 메모면 캐릭터(테마색 점 + 이름)를 **그 캐릭터의 이름 폰트**로 (커플홈 사용자 요청 —
+ *  캐릭터 글씨로 서명한 것처럼), 아니면 쓴 사람. 캐릭터가 지워졌으면 쓸 당시 이름(author)으로 */
 function MemoWho({ m, chars }: { m: StickyMemo; chars: Character[] }) {
+  const { familyOf } = useFonts();
   const ch = m.charId ? chars.find(c => c.id === m.charId) : undefined;
   return ch
-    ? <b><span className="dot-lbl"><i className="cmt-dot" style={{ background: ch.color }} />{ch.name}</span></b>
+    ? (
+      <b className="as-char" style={{ fontFamily: familyOf(ch.fontId) ?? 'var(--serif-base)' }}>
+        <span className="dot-lbl"><i className="cmt-dot" style={{ background: ch.color }} />{ch.name}</span>
+      </b>
+    )
     : <b>{m.author}</b>;
 }
 
