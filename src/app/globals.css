@@ -547,6 +547,11 @@ a{color:inherit;text-decoration:none}
 .memo-pages{margin-bottom:12px;flex-wrap:wrap}
 .memo-pages .add{color:var(--faint);padding:6px 11px}
 .postit b{display:block;font-size:calc(9.5px*var(--fs,1));letter-spacing:.1em;color:rgba(0,0,0,.4);margin-bottom:6px}
+/* 코멘트 점 (커플홈) — 자관 문답의 부연 점과 같은 모양. 마우스를 올리면 공용 툴팁, 누르면 코멘트 창 */
+.postit .cm-dot{position:absolute;top:-5px;right:-5px;width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px rgba(255,255,255,.95);cursor:var(--cur-pointer,pointer);z-index:2}
+.postit .cm-dot:hover{transform:scale(1.25)}
+/* 코멘트 창 안의 메모 미리보기 — 보드 밖이라 자리 잡지 않고 그대로 */
+.postit.static{position:static;width:auto;transform:none;box-shadow:none;cursor:default;margin-bottom:12px}
 /* 캐릭터로 남긴 메모의 이름표 — 캐릭터 이름 폰트로, 조금 크게 (필기체도 읽히게) (커플홈) */
 .postit b.as-char{font-size:calc(13px*var(--fs,1));letter-spacing:.04em;color:rgba(0,0,0,.65)}
 .postit:active{cursor:grabbing}

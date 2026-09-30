@@ -2,10 +2,11 @@
 // 스티커 메모장 (4.6) — 포스트잇 보드: 드래그 자유 배치 · 색/크기 · 랜덤 기울기 ·
 // 클릭 = 맨 위로 · 우클릭 자체 컨텍스트 메뉴(순서/수정/삭제) · 우측 메모 리스트 · 작성 권한 옵션
 // 커플홈: 페이지(종류)별 메모판 — 위쪽 탭(관리자는 추가·이름 바꾸기·삭제) · 캐입 메모(캐릭터 이름으로 남기기)
+//         · 메모 코멘트 — 자관 문답의 부연처럼 모서리 색 점 + 호버 툴팁, 점을 누르면 코멘트 창
 import React, { Suspense, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useLocalList, newId } from '@/lib/postStore';
+import { useLocalList, newId, CommentRow, COMMENT_KEY, COMMENT_SEED, commentsFor } from '@/lib/postStore';
 import {
   StickyMemo, MEMO_SEED, MEMO_COLORS, MEMO_SIZE_W, useMemoSettings,
 } from '@/lib/memoStore';
@@ -19,6 +20,7 @@ import { KTextarea, KInput, KSelect } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
+import { CharComments } from '@/components/ui/CharComments';
 
 /** 메모에 적힌 이름 — 캐입 메모면 캐릭터(테마색 점 + 이름)를 **그 캐릭터의 이름 폰트**로 (커플홈 사용자 요청 —
  *  캐릭터 글씨로 서명한 것처럼), 아니면 쓴 사람. 캐릭터가 지워졌으면 쓸 당시 이름(author)으로 */
@@ -49,6 +51,11 @@ function MemoInner() {
   const [menuSet] = useMenuSettings();
   const [settings] = useMemoSettings();
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
+  // 메모 코멘트 (커플홈) — 게시판·타래와 같은 댓글 컬렉션, target 'memo'
+  const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  const [cmtFor, setCmtFor] = useState<StickyMemo | null>(null);   // 코멘트 창을 연 메모
+  const cmtsOf = (m: StickyMemo) => commentsFor(cmtRows, 'memo', m.id);
+  const cmtName = (c: { author: string; charId?: string }) => (c.charId && chars.find(x => x.id === c.charId)?.name) || c.author;
   const boardRef = useRef<HTMLDivElement>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
 
@@ -123,7 +130,7 @@ function MemoInner() {
   const [ctx, setCtx] = useState<{ id: string; x: number; y: number; list?: boolean } | null>(null);
   const onCtx = (e: React.MouseEvent, m: StickyMemo, list = false) => {
     e.preventDefault();
-    if (!canTouch(m)) return;
+    if (!canTouch(m) && !user) return;   // 손님은 메뉴 없음 — 코멘트도 로그인해야 남긴다
     setCtx({ id: m.id, x: e.clientX, y: e.clientY, list });
   };
   const zOrder = (mode: 'up' | 'down' | 'top' | 'bottom') => {
@@ -198,7 +205,12 @@ function MemoInner() {
   };
   const remove = (m: StickyMemo) => {
     setCtx(null);
-    del.ask('메모를 삭제하시겠습니까?', () => setMemos(memos.filter(x => x.id !== m.id)));
+    del.ask('메모를 삭제하시겠습니까?', () => {
+      setMemos(memos.filter(x => x.id !== m.id));
+      // 달린 코멘트도 — 남의 코멘트는 관리자만 지울 수 있어, 관리자가 아니면 내 것만 정리한다
+      const drop = (c: CommentRow) => c.target === 'memo' && c.targetId === m.id && (isAdmin || c.authorId === user?.id);
+      if (cmtRows.some(drop)) setCmtRows(cmtRows.filter(c => !drop(c)));
+    });
   };
 
   const focus = (id: string) => {
@@ -254,6 +266,21 @@ function MemoInner() {
               onContextMenu={e => onCtx(e, m)}>
               {showWho(m) && <MemoWho m={m} chars={chars} />}
               {m.text}
+              {/* 코멘트 점 (커플홈) — 자관 문답의 부연처럼 모서리에. 색은 마지막 코멘트의 캐릭터 색, 없으면 포인트색.
+                  올리면 툴팁(공용 tip-pop, 줄바꿈 유지), 누르면 코멘트 창 */}
+              {(() => {
+                const cs = cmtsOf(m);
+                if (!cs.length) return null;
+                const last = cs[cs.length - 1];
+                const col = (last.charId && chars.find(x => x.id === last.charId)?.color) || undefined;
+                const tip = cs.slice(-5).map(c => `${cmtName(c)}: ${c.text}`).join('\n')
+                  + (cs.length > 5 ? `\n… 외 ${cs.length - 5}개` : '');
+                return (
+                  <span className="cm-dot" data-tip={tip} style={col ? { background: col } : undefined}
+                    onPointerDown={e => e.stopPropagation()}
+                    onClick={e => { e.stopPropagation(); setCmtFor(m); }} />
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -281,7 +308,11 @@ function MemoInner() {
       {ctx && (
         <div className="ctx-menu on" style={{ left: ctx.x, top: ctx.y }} onClick={e => e.stopPropagation()}>
           {/* 순서 항목은 보드에서 열었을 때만 — 리스트에서는 수정/삭제만 */}
-          {!ctx.list && (
+          {(() => { const m = memos.find(x => x.id === ctx.id); return m && user ? (
+            <button onClick={() => { setCtx(null); setCmtFor(m); }}>코멘트 남기기{cmtsOf(m).length ? ` (${cmtsOf(m).length})` : ''}</button>
+          ) : null; })()}
+          {(() => { const m = memos.find(x => x.id === ctx.id); return m && canTouch(m) && user ? <div className="sep" /> : null; })()}
+          {!ctx.list && (() => { const m = memos.find(x => x.id === ctx.id); return !!m && canTouch(m); })() && (
             <>
               <button onClick={() => zOrder('up')}>위로</button>
               <button onClick={() => zOrder('down')}>아래로</button>
@@ -291,9 +322,29 @@ function MemoInner() {
               <div className="sep" />
             </>
           )}
-          <button onClick={() => { const m = memos.find(x => x.id === ctx.id); if (m) openEdit(m); }}>수정</button>
-          <button onClick={() => { const m = memos.find(x => x.id === ctx.id); if (m) remove(m); }}>삭제</button>
+          {(() => { const m = memos.find(x => x.id === ctx.id); return !!m && canTouch(m); })() && (
+            <>
+              <button onClick={() => { const m = memos.find(x => x.id === ctx.id); if (m) openEdit(m); }}>수정</button>
+              <button onClick={() => { const m = memos.find(x => x.id === ctx.id); if (m) remove(m); }}>삭제</button>
+            </>
+          )}
         </div>
+      )}
+
+      {/* 코멘트 창 (커플홈) — 메모 내용 + 코멘트 목록·입력 (캐입 가능) */}
+      {cmtFor && (
+        <Modal open onClose={() => setCmtFor(null)} small title="메모 코멘트"
+          actions={<button className="btn btn-ghost" onClick={() => setCmtFor(null)}>CLOSE</button>}>
+          <div className="postit static" style={{ background: cmtFor.color }}>
+            {showWho(cmtFor) && <MemoWho m={cmtFor} chars={chars} />}
+            {cmtFor.text}
+          </div>
+          <CharComments target="memo" targetId={cmtFor.id} rows={cmtRows} setRows={setCmtRows} chars={chars}
+            notify={{
+              title: '메모에 새 코멘트', href: sectionHref('memo', cmtFor.secId ?? MAIN_SEC),
+              toIds: cmtFor.authorId ? [cmtFor.authorId] : [], admins: true,
+            }} />
+        </Modal>
       )}
 
       {/* 페이지 탭 우클릭 메뉴 (관리자) — 기본 페이지는 지울 수 없다 */}
