@@ -21,6 +21,7 @@ import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
 import { RpRoom, RP_SEED, rpMemberIds } from '@/lib/rpStore';
 import { useFonts } from '@/lib/fontStore';
+import { useMainStore } from '@/lib/mainStore';
 import { Tip, KInput, KTextarea, KSelect, KRadio, KCheck } from '@/components/ui/Kit';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
 import { ColorField } from '@/components/ui/ColorField';
@@ -243,6 +244,10 @@ export default function RelDetailPage() {
   const { user, isAdmin } = useAuth();
   const toast = useToast();
   const { familyOf } = useFonts();
+  // 관리 버튼(EDIT·DELETE·＋ RELATION·AU ＋·멤버·기록 추가…)은 프로필 메뉴의 편집모드를 켰을 때만 보인다
+  // (커플홈 사용자 요청 — 깔끔한 화면을 보려고 로그아웃하기 귀찮다). 권한 판정은 그대로 isAdmin
+  const { editOn } = useMainStore();
+  const tool = isAdmin && editOn;
   // 캐릭터 이름 폰트 — 지정이 없으면 기본 세리프 원본 (커플홈: 타이틀 폰트를 따라가지 않는다)
   const nameFont = (id?: string) => familyOf(id) ?? 'var(--serif-base)';
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -823,7 +828,7 @@ export default function RelDetailPage() {
         );
       })()}
 
-      {(rel.aus.length > 1 || isAdmin) && (
+      {(rel.aus.length > 1 || tool) && (
         <div className="au-list">
           {/* AU 네모에 대표 이미지를 넣는다 (v2.0 사용자 요청 — 색만 들어가 있어 밋밋했다).
               원본은 자관 썸네일(잡아 둔 크롭 그대로), 그 외 AU는 그 AU의 첫 아트 = 대표 이미지.
@@ -840,14 +845,14 @@ export default function RelDetailPage() {
               </div>
             );
           })}
-          {isAdmin && (
+          {tool && (
             <div className="au-item add" data-tip="AU 추가/관리" onClick={() => setAuOpen(true)}>＋</div>
           )}
         </div>
       )}
 
-      {/* 관리자 액션 (좌상단) */}
-      {isAdmin && (
+      {/* 관리자 액션 (좌상단) — 편집모드일 때만 */}
+      {tool && (
         <div className="rel-admin-actions">
           {/* AU 선택 중이면 그 AU의 일러·캐치프레이즈를 편집 (v1.9) */}
           <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
@@ -873,7 +878,7 @@ export default function RelDetailPage() {
         const list = openableRels(rels, { isAdmin, loggedIn: !!user });
         if (list.length < 2) return null;
         return (
-          <div className={`rel-switch ${isAdmin ? 'under' : ''}`}>
+          <div className={`rel-switch ${tool ? 'under' : ''}`}>
             {list.map(r => (
               <button key={r.id} type="button" className={r.id === rel.id ? 'on' : ''}
                 onClick={() => { if (r.id !== rel.id) router.push(relPath(r)); }}>
@@ -959,7 +964,7 @@ export default function RelDetailPage() {
                 onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
                 onGo={() => router.push(charHref(pairSlots[0]!.charId))}
                 onRemove={() => removeMember(pairSlots[0]!.charId)} />
-            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
+            : <EmptyCard isAdmin={tool} onAdd={() => setMemberOpen(true)} />}
           <div className={`rel-center ${single ? 'one-mode' : ''}`}
             style={{ background: 'rgba(255,255,255,.04)', border: '1px solid var(--line-dark)' }}>
             {/* 전신 — 등록 이미지(AU별 우선) + 크기/앞뒤는 자관 수정의 미리보기에서 (v1.9) */}
@@ -1021,7 +1026,7 @@ export default function RelDetailPage() {
                 onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
                 onGo={() => router.push(charHref(pairSlots[1]!.charId))}
                 onRemove={() => removeMember(pairSlots[1]!.charId)} />
-            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
+            : <EmptyCard isAdmin={tool} onAdd={() => setMemberOpen(true)} />}
         </div>
       ) : (
         /* 다인 자관 — 프로토타입 multi-body: 좌 멤버 리스트(430px) + 우 그룹 일러 */
@@ -1059,13 +1064,13 @@ export default function RelDetailPage() {
                   <div className="gem-mini">
                     {(c.colors ?? []).slice(0, 3).map(p => <i key={p.hex + p.label} style={{ background: p.hex }} />)}
                   </div>
-                  {isAdmin && (
+                  {tool && (
                     <span className="rm" onClick={e => { e.stopPropagation(); removeMember(m.charId); }}>제거</span>
                   )}
                 </div>
               );
             })}
-            {isAdmin && rel.members.length < 6 && (
+            {tool && rel.members.length < 6 && (
               <div className="mrow add" onClick={() => setMemberOpen(true)}>＋ ADD MEMBER (최대 6인)</div>
             )}
           </div>
@@ -1103,11 +1108,11 @@ export default function RelDetailPage() {
           <button className={tab === 'tl' ? 'on' : ''} onClick={() => setTab('tl')}><span className="lb-pc">TIMELINE</span><span className="lb-m">T</span></button>
           {/* QUESTIONS 섹션은 ＋로 추가해야 생김 (v1.9) — 처음에는 타임라인만 */}
           {qaOn && <button className={tab === 'qa' ? 'on' : ''} onClick={() => setTab('qa')}><span className="lb-pc">QUESTIONS</span><span className="lb-m">Q</span></button>}
-          {isAdmin && !qaOn && (
+          {tool && !qaOn && (
             <button data-tip="QUESTIONS 섹션 추가" style={{ color: 'var(--faint)', fontSize: 14, padding: '0 6px' }}
               onClick={() => setQsetOpen(true)}>＋</button>
           )}
-          {isAdmin && (
+          {tool && (
             <span className="rel-tab-acts">
               {/* 이 줄의 버튼은 홈 공통 버튼과 같은 세로 크기(35px)로 — 탭 줄에서만 작아 보이던 것 */}
               {tab === 'tl' && auTimeline.length > 1 && (
@@ -1198,7 +1203,7 @@ export default function RelDetailPage() {
                   <div className="qa-answers" ref={ansRef} onScroll={onAnsScroll}>
                   <div className="qa-no">TODAY&apos;S QUESTION · Q.{String(curQa.no).padStart(3, '0')}
                     {/* 질문에 대한 오너 설명 — 관리자만 작성 (v2.0 사용자 요청) */}
-                    {isAdmin && (
+                    {tool && (
                       <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8, fontWeight: 400, letterSpacing: 0 }}
                         onClick={() => setQNote({ no: curQa.no, text: curQa.note ?? '' })}>
                         {curQa.note ? '설명 수정' : '＋ 설명'}
@@ -1291,7 +1296,7 @@ export default function RelDetailPage() {
                      바로 모달이 뜨는 것보다 한 단계 거치는 쪽이 실수로 우클릭했을 때 안전하다).
                      지금 보고 있는 질문이 아니어도 리스트에서 바로 고를 수 있다 */
                   <div key={q.no} className={`qa-item ${curQa?.no === q.no ? 'on' : ''}`} onClick={() => setQaNo(q.no)}
-                    data-tip={isAdmin ? '우클릭 — 리스트로 되돌리기' : undefined}
+                    data-tip={tool ? '우클릭 — 리스트로 되돌리기' : undefined}
                     onContextMenu={e => { if (!isAdmin) return; e.preventDefault(); setQaCtx({ x: e.clientX, y: e.clientY, no: q.no }); }}>
                     <b>Q.{String(q.no).padStart(3, '0')} {q.q}</b>
                     <small>{q.date.slice(5).replace('-', '.')} · 답변 {answersOf(q.no).length}</small>

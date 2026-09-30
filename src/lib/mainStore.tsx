@@ -93,7 +93,12 @@ const STORAGE_KEY = 'ohome.main.v1';
  *  /trpg 로그 백업이 빠져 있던 것은 실수 — 드래그 정렬·목록 숨김 확인 모두 이 토글이 있어야 켜진다
  *  (v2.0 사용자 발견 — 목록 숨김 기능을 만들다 보니 편집모드 자체가 이 페이지에서 켜지지 않는 걸 발견) */
 const EDIT_PAGES = ['/', '/gallery', '/dotori', '/tchars', '/playlog', '/trpg'];
-const EDIT_PAGE_NAMES = '메인 · 갤러리 · 도토리 · TRPG 캐릭터 · 플레이기록 · RP LOG';
+const EDIT_PAGE_NAMES = '메인 · 갤러리 · 도토리 · TRPG 캐릭터 · 플레이기록 · RP LOG · 자관';
+/** 관리 버튼만 켜고 끄는 편집모드 (커플홈 사용자 요청 — 「자관의 관리자 버튼도 편집모드를 켰을 때만,
+ *  깔끔한 화면을 보려고 로그아웃하기 귀찮다」). 배치 스냅샷·종료 확인 없이 그냥 켜고 끈다.
+ *  자관 화면(/rels/<id>)에서 켜고, 자관·캐릭터 영역(/rels/… · /chars/…)을 벗어나면 저절로 꺼진다 */
+const isToolPage = (p: string) => /^\/rels\/(?!new$)[^/]+$/.test(p);
+const inToolArea = (p: string) => /^\/(rels|chars)\//.test(p);
 
 interface MainCtx {
   state: MainState;
@@ -122,6 +127,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<MainState>(DEFAULT_STATE);
   const [editOn, setEditOn] = useState(false);
+  const editKind = useRef<'layout' | 'tools'>('layout');   // 켠 편집모드의 종류 — tools는 스냅샷·확인 없음
   const [gridOn, setGridOn] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -164,7 +170,14 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
     document.body.classList.toggle('edit-on', editOn);
   }, [editOn]);
 
+  // 관리 버튼 편집모드는 자관·캐릭터 영역을 벗어나면 저절로 끈다 — 다른 페이지에서 「편집중」만 남지 않게
+  useEffect(() => {
+    if (editOn && editKind.current === 'tools' && !inToolArea(pathname)) setEditOn(false);
+  }, [pathname, editOn]);
+
   const startEdit = useCallback(() => {
+    if (isToolPage(pathname)) { editKind.current = 'tools'; setEditOn(true); return; }   // 모바일에서도 된다
+    editKind.current = 'layout';
     if (window.matchMedia('(max-width:620px)').matches) {
       setNotice('모바일에서는 편집모드를 사용할 수 없습니다. PC에서 해주세요.');
       return;
@@ -194,17 +207,23 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
 
   const toggleEdit = useCallback(() => {
     if (!isAdmin) return;
-    if (editOn) setExitOpen(true);
-    else startEdit();
+    if (!editOn) startEdit();
+    else if (editKind.current === 'tools') setEditOn(false);   // 저장할 게 없으니 묻지 않는다
+    else setExitOpen(true);
   }, [isAdmin, editOn, startEdit]);
 
   const requestExit = useCallback((pendingHref?: string) => {
+    if (editKind.current === 'tools') {
+      setEditOn(false);
+      if (pendingHref) router.push(pendingHref);
+      return;
+    }
     pendingNav.current = pendingHref ?? null;
     setExitOpen(true);
-  }, []);
+  }, [router]);
 
   const guardNav = useCallback((href: string) => {
-    if (!editOn) return false;
+    if (!editOn || editKind.current === 'tools') return false;   // 관리 버튼 모드는 이동을 막지 않는다
     requestExit(href);
     return true;
   }, [editOn, requestExit]);
@@ -273,7 +292,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      state, editOn, editAvailable: EDIT_PAGES.includes(pathname), gridOn, setGridOn, toggleEdit, requestExit, guardNav,
+      state, editOn, editAvailable: EDIT_PAGES.includes(pathname) || isToolPage(pathname), gridOn, setGridOn, toggleEdit, requestExit, guardNav,
       updateWidget, addWidget, removeWidget, setLayoutMode, setMobileOff, setMobileOrder, saveNow, resetMain,
     }}>
       {children}
