@@ -1285,9 +1285,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 다이어리 두 칸 (커플홈) — 대표 자관의 왼쪽 캐릭터 | 오른쪽 캐릭터. 좁은 화면에서는 위아래 */
 .dy-split{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .dy-col{min-width:0}
-.dy-col-hd{display:flex;align-items:center;gap:9px;margin:0 4px 10px}
+.dy-col-hd{display:flex;align-items:center;gap:9px;margin:0 4px 10px;height:40px} /* 세로값 고정 — 두 칸의 목록 시작이 같다 */
 .dy-col-hd .cf{width:28px;height:28px;border-radius:50%;overflow:hidden;position:relative;flex-shrink:0;box-shadow:0 0 0 2px var(--cc)}
-.dy-col-hd b{font-size:calc(16px*var(--fs,1));letter-spacing:.12em;color:var(--page-title,var(--ink))}
+.dy-col-hd .nm{display:block;height:34px;min-width:0;font-size:calc(16px*var(--fs,1));letter-spacing:.12em;color:var(--page-title,var(--ink))} /* 글자는 FitHeight가 이 높이에 맞춘다 */
 .dy-col-hd small{color:var(--faint);font-size:calc(11px*var(--fs,1))}
 .dy-col-hd .btn{margin-left:auto}
 @media (max-width:760px){.dy-split{grid-template-columns:1fr}}

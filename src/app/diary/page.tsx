@@ -2,7 +2,8 @@
 // 다이어리 (4.14) — 아코디언 목록: 제목+무드+날짜 한 줄, 클릭 시 그 자리에서 펼침 · 공개범위(비공개는 관리자만)
 // 커플홈: 두 사람이 같이 쓰는 일기 — 대표 자관의 왼쪽/오른쪽 캐릭터 칸으로 반씩 나눠 쓴다.
 //   · 칸 머리의 ＋ WRITE는 그 캐릭터로 쓸 수 있는 사람에게만 (관리자는 자캐, 상대 오너는 권한 받은 캐릭터)
-//   · 구분 탭(환경설정 > 다이어리 — 「전체」 없이, 맨 위 구분이 처음 화면) + 무드 필터 · 칸마다 5개씩 페이지 · 댓글(캐입 가능)
+//   · 구분 탭(환경설정 > 다이어리 — 「전체」 없이, 맨 위 구분이 처음 화면) · 칸마다 5개씩 페이지 · 댓글(캐입 가능)
+//   · 무드는 일기마다 붙는 표시로만 — 거르는 탭은 두지 않는다 (탭이 두 종류면 복잡하다, 커플홈 사용자 요청)
 //   · 페어 자관이 없으면 예전처럼 한 칸
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,7 @@ import { BlobImg } from '@/lib/blobStore';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { CharComments } from '@/components/ui/CharComments';
+import { FitHeight } from '@/components/ui/InkFit';
 
 type Side = 'l' | 'r' | 'one';
 
@@ -75,7 +77,6 @@ function DiaryPageInner() {
   const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
   const [dset] = useDiarySettings();
   const [open, setOpen] = useState<string | null>(null);
-  const [fMood, setFMood] = useState('all');
   const [fCat, setFCat] = useState<string | null>(null);   // null = 아직 안 고름 → 맨 위 구분
   const [q, setQ] = useState('');
   const [pages, setPages] = useState<Record<Side, number>>({ l: 1, r: 1, one: 1 });
@@ -92,7 +93,7 @@ function DiaryPageInner() {
   const effCat = dset.cats.length === 0 ? 'all'
     : fCat === 'none' || (fCat && dset.cats.some(c => c.id === fCat)) ? fCat : dset.cats[0].id;
   // 거르는 조건이 바뀌면 모든 칸을 첫 페이지부터
-  useEffect(() => { setPages({ l: 1, r: 1, one: 1 }); }, [fMood, effCat, q]);
+  useEffect(() => { setPages({ l: 1, r: 1, one: 1 }); }, [effCat, q]);
 
   if (!loaded) return <section className="page" />;
 
@@ -121,16 +122,12 @@ function DiaryPageInner() {
   const canEdit = (p: DiaryPost) => isAdmin || (!!user && p.authorId === user.id);
   const seen = posts.filter(canSee);
   const visible = seen
-    .filter(p => fMood === 'all' || p.moodId === fMood)
     .filter(p => effCat === 'all' || (effCat === 'none' ? !p.catId : p.catId === effCat))
     .filter(p => !query || p.title.toLowerCase().includes(query))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const moodOf = (id: string) => moods.find(m => m.id === id);
   const catName = (id?: string) => dset.cats.find(c => c.id === id)?.name;
-  // 무드 숫자는 지금 보고 있는 구분 안에서 센다
-  const inCat = seen.filter(p => effCat === 'all' || (effCat === 'none' ? !p.catId : p.catId === effCat));
-  const cntMood = (mid: string) => inCat.filter(p => mid === 'all' || p.moodId === mid).length;
   const cntCat = (cid: string) => seen.filter(p => cid === 'all' || (cid === 'none' ? !p.catId : p.catId === cid)).length;
   // 쓰기 — 그 칸의 캐릭터와 지금 보고 있는 구분을 골라 둔 채로 연다
   const writeHref = (cid?: string) => {
@@ -202,7 +199,12 @@ function DiaryPageInner() {
             <span className="cf" style={{ background: ch?.color ?? 'var(--line)', ['--cc' as string]: ch?.color ?? 'var(--line)' }}>
               {ch?.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
             </span>
-            <b style={{ fontFamily: familyOf(ch?.fontId) ?? 'var(--serif-base)' }}>{ch?.name ?? '—'}</b>
+            {/* 세로값 고정 + 글자 크기를 거기에 맞춘다 (커플홈 사용자 요청) — 두 칸 이름의 폰트가 달라도
+                머리 줄 높이가 같아서 아래 목록이 어긋나지 않는다 */}
+            <FitHeight className="nm" text={ch?.name ?? '—'} style={{
+              fontFamily: familyOf(ch?.fontId) ?? 'var(--serif-base)',
+              fontWeight: (ch?.nameBold ?? true) ? 700 : 400,
+            }} />
             <small>{list.length}</small>
             {cid && canWriteAs(cid) && (
               <button className="btn btn-dark" onClick={() => router.push(writeHref(cid))}>＋ WRITE</button>
@@ -233,7 +235,7 @@ function DiaryPageInner() {
       </div>
 
       {/* 구분 탭 (커플홈 — 환경설정 > 다이어리에서 관리 · 순서도 거기서) + 검색·WRITE */}
-      <div className="toolrow" style={{ marginBottom: 10 }}>
+      <div className="toolrow" style={{ marginBottom: 16 }}>
         {dset.cats.length > 0 ? (
           <div className="seg" style={{ flexWrap: 'wrap' }}>
             {dset.cats.map(c => (
@@ -251,20 +253,6 @@ function DiaryPageInner() {
           {!sides && canWriteOne && <button className="btn btn-dark" onClick={() => router.push(writeHref())}>＋ WRITE</button>}
         </div>
       </div>
-
-      {/* 무드 필터 */}
-      {moods.length > 0 && (
-        <div className="tag-row" style={{ marginBottom: 16 }}>
-          <div className={`tag ${fMood === 'all' ? 'on' : ''}`} onClick={() => setFMood('all')}>
-            전체 <small>{cntMood('all')}</small>
-          </div>
-          {moods.map(m => (
-            <div key={m.id} className={`tag ${fMood === m.id ? 'on' : ''}`} onClick={() => setFMood(m.id)}>
-              <span style={{ color: m.color }}>{m.icon}</span> {m.name} <small>{cntMood(m.id)}</small>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* 왼쪽 캐릭터 칸 | 오른쪽 캐릭터 칸 — 자관 상세와 같은 좌우 (좌우 바꾸기 반영). 페어가 아니면 한 칸 */}
       {sides
