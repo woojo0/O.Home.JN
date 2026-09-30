@@ -81,15 +81,18 @@ export default function BackupDetailPage() {
       {/* 본문만 폭 제한 — 헤더는 풀폭 위치 유지 */}
       <div className="panel" style={{ padding: 20, maxWidth: 960, margin: '0 auto' }}>
         {/* 제목 + 말머리 뱃지 (유형 「단일」 대신 — 커플홈 사용자 요청) */}
-        <h2 style={{ fontSize: 18, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h2 style={{ fontSize: 18, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           {p.title}
           {p.category && <span style={boardBadgeStyle(cat)}>{p.category}</span>}
+          {/* 작성자 · 날짜 · 태그 — 제목 줄의 오른쪽 끝에 (커플홈 사용자 요청) */}
+          <span style={{
+            marginLeft: 'auto', fontSize: 'calc(11.5px*var(--fs,1))', fontWeight: 400, letterSpacing: 0,
+            color: 'var(--faint)', whiteSpace: 'nowrap', flexShrink: 0,
+          }}>
+            {p.author} · {fmtDate(p.date)}{p.madeDate ? ` · 제작 ${p.madeDate}` : ''}
+            {(p.tags ?? []).map(t => <i key={t} className="tag-in">#{t}</i>)}
+          </span>
         </h2>
-        {/* 작성자 · 날짜 · 태그 — 카드 안에 */}
-        <p style={{ fontSize: 'calc(11.5px*var(--fs,1))', color: 'var(--faint)', margin: '0 0 14px' }}>
-          {p.author} · {fmtDate(p.date)}{p.madeDate ? ` · 제작 ${p.madeDate}` : ''}
-          {(p.tags ?? []).map(t => <i key={t} className="tag-in">#{t}</i>)}
-        </p>
 
         {p.type === 'log' ? (
           /* 로그형 — 웹툰식 세로 스크롤 · 이미지 사이 틈 없이 이어 붙임 (만화 연결) */
