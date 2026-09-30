@@ -13,7 +13,7 @@ import {
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
-  findByKey, charPath, relPath, openableRels,
+  findByKey, charPath, relPath, openableRels, relMenuHref,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
 import { putBlob } from '@/lib/blobStore';
@@ -22,6 +22,7 @@ import { TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
 import { RpRoom, RP_SEED, rpMemberIds } from '@/lib/rpStore';
 import { useFonts } from '@/lib/fontStore';
 import { useMainStore } from '@/lib/mainStore';
+import { useMenuSettings, removeFromTree, defaultTree } from '@/lib/menuStore';
 import { Tip, KInput, KTextarea, KSelect, KRadio, KCheck } from '@/components/ui/Kit';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
 import { ColorField } from '@/components/ui/ColorField';
@@ -248,6 +249,7 @@ export default function RelDetailPage() {
   // (커플홈 사용자 요청 — 깔끔한 화면을 보려고 로그아웃하기 귀찮다). 권한 판정은 그대로 isAdmin
   const { editOn } = useMainStore();
   const tool = isAdmin && editOn;
+  const [ms, patchMenu] = useMenuSettings();   // 자관을 지우면 메뉴 항목도 뺀다 (커플홈 — 자관마다 메뉴 항목)
   // 캐릭터 이름 폰트 — 지정이 없으면 기본 세리프 원본 (커플홈: 타이틀 폰트를 따라가지 않는다)
   const nameFont = (id?: string) => familyOf(id) ?? 'var(--serif-base)';
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
@@ -914,6 +916,7 @@ export default function RelDetailPage() {
             setRels(rels.filter(r => r.id !== rel.id));
             // 자관에 달렸던 문답 답변도 함께 (v2.0 — 따로 저장이라 남기면 주인 없는 줄이 된다)
             setQaRows(qaRows.filter(r => r.relId !== rel.id));
+            patchMenu({ tree: removeFromTree(ms.tree ?? defaultTree(), relMenuHref(rel.id)) });
             router.push('/rels');
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },

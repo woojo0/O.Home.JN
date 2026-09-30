@@ -5,6 +5,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { boardEntries, useMenuSettings, buildMenu } from '@/lib/menuStore';
+import { Relation, REL_SEED, openableRels, relMenuEntries } from '@/lib/charStore';
+import { useLocalList } from '@/lib/postStore';
 import { useBoards } from '@/lib/boardStore';
 import { useSections, sectionMenuEntries } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries } from '@/lib/linkStore';
@@ -41,10 +43,13 @@ export function TopBar() {
   const { boards, loaded: boardsLoaded } = useBoards(); // 다중 게시판 (5.2) — 게시판 그룹에 동적 반영
   const { map: secMap } = useSections();
   const { links } = useCustomLinks();                    // 커스텀 링크 (v2.0 사용자 요청)                 // 여러 개로 만든 섹션 (v2.0) — 갤러리·다이어리 등
+  // 자관마다 메뉴 항목 (커플홈 사용자 요청) — 이 사람이 열 수 있는 자관만
+  const [rels, , relsLoaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const relEntries = relMenuEntries(openableRels(rels, { isAdmin, loggedIn: !!user }));
   // 저장 설정 로드 전에는 메뉴·로고를 그리지 않음 — 새로고침 시 기본 구성이 깜빡이는 것 방지 (v1.9)
-  const ready = menuLoaded && boardsLoaded;
+  const ready = menuLoaded && boardsLoaded && relsLoaded;
   const menu = ready
-    ? buildMenu(menuSet, [...boardEntries(boards), ...sectionMenuEntries(secMap), ...linkEntries(links)], { loggedIn: !!user, isAdmin, id: user?.id })
+    ? buildMenu(menuSet, [...boardEntries(boards), ...sectionMenuEntries(secMap), ...relEntries, ...linkEntries(links)], { loggedIn: !!user, isAdmin, id: user?.id })
     : [];
   const [site, , siteLoaded] = useSiteSettings();    // 로고 텍스트/서브/정렬 (5.2)
   const avatarSrc = useBlobUrl(user?.avatarUrl);     // 프로필 이미지 (마이페이지, v1.9)

@@ -4,7 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
-import { Character, CHAR_SEED, Relation, REL_SEED, RelMember } from '@/lib/charStore';
+import { Character, CHAR_SEED, Relation, REL_SEED, RelMember, relMenuHref, isRelMenuHref } from '@/lib/charStore';
+import { useMenuSettings, insertAfterInTree, defaultTree } from '@/lib/menuStore';
 import { RelForm } from '@/components/rels/RelForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -14,6 +15,7 @@ export default function RelNewPage() {
   const { isAdmin } = useAuth();
   const toast = useToast();
   const [rels, setRels, loaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
+  const [ms, patchMenu] = useMenuSettings();   // 새 자관을 메뉴에 넣기 위해
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
 
   if (!loaded) return <section className="page" />;
@@ -61,7 +63,12 @@ export default function RelNewPage() {
             timeline: [], questions: [],
           };
           setRels([...rels, rel]);
-          toast('자관이 등록되었습니다 — 상대 캐릭터·한마디 등은 상세에서 이어서');
+          // 자관 페이지가 하나 더 생긴다 (커플홈 사용자 요청) — 메뉴의 자관 항목 뒤에 바로 넣는다.
+          // 자관을 메뉴에서 빼 뒀으면 미배치에 머문다 (메뉴 관리에서 넣는다)
+          const tree = insertAfterInTree(ms.tree ?? defaultTree(), isRelMenuHref, relMenuHref(rel.id), rel.name);
+          if (tree) patchMenu({ tree });
+          toast(tree ? '자관이 등록되고 메뉴에도 들어갔습니다 — 상대 캐릭터·한마디 등은 상세에서 이어서'
+            : '자관이 등록되었습니다 — 메뉴에 넣으려면 환경설정 > 메뉴 관리의 미배치에서');
           router.push(`/rels/${rel.id}`);
         }}
       />

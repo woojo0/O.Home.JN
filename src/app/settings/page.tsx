@@ -39,7 +39,7 @@ import { SymbolInput } from '@/components/ui/SymbolInput';
 import { allBlobs, putBlobAs, useBlobUrl, getBlob } from '@/lib/blobStore';
 import { parseAni } from '@/lib/aniCursor';
 import { fileDrop } from '@/lib/dnd';
-import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relsWithoutChar } from '@/lib/charStore';
+import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relsWithoutChar, relMenuEntries } from '@/lib/charStore';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat } from '@/lib/diaryStore';
@@ -2157,11 +2157,13 @@ function MenuPane() {
   // 게시판 + 여러 개로 만든 섹션 — 메뉴가 아는 「추가 항목」 전체 (v2.0)
   const { map: secMap } = useSections();
   const { links, setLinks } = useCustomLinks();   // 커스텀 링크 (v2.0 사용자 요청)
+  // 자관마다 메뉴 항목 (커플홈 사용자 요청) — 지운 자관의 항목은 정규화에서 빠진다
+  const [rels, , relsLoaded] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   // 새 커스텀 링크 입력 폼 (v2.0 사용자 제보 — 「주소를 적으면 이름 짓기 전에 올라간다」).
   // 예전에는 ADD가 빈 행을 즉시 등록해, 주소를 치는 순간 미배치에 미완성 링크가 나타났다
   const [nlName, setNlName] = useState('');
   const [nlHref, setNlHref] = useState('');
-  const extraAll = [...boardEntries(boards), ...sectionMenuEntries(secMap), ...linkEntries(links)];
+  const extraAll = [...boardEntries(boards), ...sectionMenuEntries(secMap), ...relMenuEntries(rels), ...linkEntries(links)];
   const defLabel = (href: string) => menuLabelFor(href, extraAll) ?? href;
 
   // 드래프트 — 모든 편집(삭제 포함)은 SAVE를 눌러야 실제 메뉴에 반영 (v1.9 사용자 피드백)
@@ -2241,7 +2243,7 @@ function MenuPane() {
   /* 트리 정규화(저장본 대상) — 사라진 기능(삭제된 게시판) 제거.
      **새로 만든 것을 자동으로 넣지는 않는다** (v2.0 사용자 확정) — 미배치에 머물게 둔다 */
   useEffect(() => {
-    if (!msLoaded || !bLoaded) return;
+    if (!msLoaded || !bLoaded || !relsLoaded) return;   // 자관 목록이 오기 전에 자관 항목을 「사라진 기능」으로 지우면 안 된다
     let next: MenuGroupNode[] = saved
       .map(g => (g.href
         ? (menuLabelFor(g.href, extraAll) === null ? null : g)
@@ -2249,7 +2251,7 @@ function MenuPane() {
       .filter((g): g is MenuGroupNode => !!g);
     if (JSON.stringify(next) !== JSON.stringify(saved)) patch({ tree: next });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [msLoaded, bLoaded, boards, ms.tree]);
+  }, [msLoaded, bLoaded, relsLoaded, boards, rels, ms.tree]);
 
   // 미배치 = 트리에 없는 기능 — 메뉴에 노출되지 않음 (데이터는 보존)
   const placedSet = new Set(tree.flatMap(g => (g.href ? [g.href] : g.items.map(i => i.href))));

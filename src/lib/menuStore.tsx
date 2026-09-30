@@ -215,6 +215,36 @@ export const boardEntries = (boards?: { id: string; name: string }[]): ExtraEntr
   (boards ?? []).filter(b => b.id !== 'main')
     .map(b => ({ id: b.id, name: b.name, href: extraBoardHref(b.id), anchor: '/board' }));
 
+/**
+ * 트리에 항목 하나 끼워 넣기 (커플홈 — 새 자관을 만들면 자관 항목 뒤에 바로 배치한다).
+ * after(href)가 참인 **마지막** 항목 뒤에 넣는다. 그 항목이 하위 메뉴면 같은 상위 안에 하위로,
+ * 단독 메뉴면 그 뒤에 단독 메뉴로. 이미 있거나 기준 항목이 없으면(자관을 메뉴에서 뺐다면) null — 미배치에 머문다
+ */
+export function insertAfterInTree(
+  tree: MenuGroupNode[], after: (href: string) => boolean, href: string, label: string,
+): MenuGroupNode[] | null {
+  if (tree.some(g => g.href === href || g.items.some(it => it.href === href))) return null;
+  for (let gi = tree.length - 1; gi >= 0; gi--) {
+    const g = tree[gi];
+    if (g.href) {
+      if (!after(g.href)) continue;
+      const node: MenuGroupNode = { id: newGroupId(), label, href, items: [] };
+      return [...tree.slice(0, gi + 1), node, ...tree.slice(gi + 1)];
+    }
+    let idx = -1;
+    g.items.forEach((it, i) => { if (after(it.href)) idx = i; });
+    if (idx < 0) continue;
+    const items = [...g.items.slice(0, idx + 1), { href }, ...g.items.slice(idx + 1)];
+    return tree.map((x, i) => (i === gi ? { ...x, items } : x));
+  }
+  return null;
+}
+
+/** 트리에서 이 주소를 뺀다 — 항목(자관 등)을 지웠을 때. 단독 메뉴였으면 그 메뉴째로 */
+export function removeFromTree(tree: MenuGroupNode[], href: string): MenuGroupNode[] {
+  return tree.filter(g => g.href !== href).map(g => ({ ...g, items: g.items.filter(it => it.href !== href) }));
+}
+
 /** 메뉴 관리에서 지정한 페이지 상단 큰 제목 (5.2 v1.9) — 정확히 일치하는 href만, 없으면 null */
 export function pageTitleFor(s: MenuSettings, href: string): string | null {
   for (const g of s.tree ?? []) {

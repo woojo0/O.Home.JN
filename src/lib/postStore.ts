@@ -10,6 +10,8 @@ import { currentUserId } from './currentUser';
 /** 목록 저장 실패 알림 (v2.0) — 조용히 되돌리면 "쓴 게 바로 지워진다"로만 보여 원인을 알 수 없다.
  *  ListSync가 받아 화면에 띄운다 (설정 저장 실패 알림과 같은 방식) */
 export const LIST_ERR_EVT = 'ohome-list-error';
+/** 같은 탭 안에서 목록이 바뀌었을 때 (로컬 모드) — detail: { key, next } */
+const LIST_EVT = 'ohome-list';
 
 export interface Comment {
   id: string;
@@ -144,8 +146,15 @@ export function useLocalList<T extends { id?: string }>(key: string, seed: T[]):
       if (e.key !== key || e.newValue == null) return;
       try { setList(JSON.parse(e.newValue)); } catch { /* 무시 */ }
     };
+    // 같은 탭의 다른 화면(상단바 등)이 저장한 것도 바로 — storage 이벤트는 다른 탭에만 간다 (커플홈:
+    // 자관을 만들면 상단 메뉴에 그 자관 항목이 바로 보여야 한다. 서버 모드는 구독이 이 일을 한다)
+    const onLocal = (e: Event) => {
+      const d = (e as CustomEvent<{ key: string; next: T[] }>).detail;
+      if (d?.key === key && d.next !== latest.current) { setList(d.next); latest.current = d.next; }
+    };
     window.addEventListener('storage', onStorage);
-    return () => { alive = false; window.removeEventListener('storage', onStorage); };
+    window.addEventListener(LIST_EVT, onLocal);
+    return () => { alive = false; window.removeEventListener('storage', onStorage); window.removeEventListener(LIST_EVT, onLocal); };
   }, [key, server, table]);
 
   const update = useCallback((next: T[]) => {
@@ -173,6 +182,7 @@ export function useLocalList<T extends { id?: string }>(key: string, seed: T[]):
       return;
     }
     try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* 무시 */ }
+    try { window.dispatchEvent(new CustomEvent(LIST_EVT, { detail: { key, next } })); } catch { /* 무시 */ }
   }, [key, server, table]);
 
   return [list, update, loaded];

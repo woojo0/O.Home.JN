@@ -435,6 +435,14 @@ export const charPath = (c: { id: string; slug?: string }) => `/chars/${c.slug?.
 /** 이 자관의 주소 — 별명을 정했으면 그것, 아니면 id */
 export const relPath = (r: { id: string; slug?: string }) => `/rels/${r.slug?.trim() || r.id}`;
 
+/** 메뉴에 얹을 자관 항목 (커플홈 사용자 요청 — 「자관을 추가하면 자관 페이지가 하나 더 생겨야 한다」).
+ *  자관마다 /rels/<id> 페이지가 메뉴 항목이 된다 — 별명(slug)을 바꿔도 메뉴가 안 끊기게 id 주소로.
+ *  기본 「자관」(/rels)은 첫 자관을 연다. 새 자관은 만들 때 자관 항목 뒤에 바로 배치한다 (rels/new) */
+export const relMenuHref = (id: string) => `/rels/${id}`;
+export const isRelMenuHref = (href: string) => href === '/rels' || /^\/rels\/[^/?]+$/.test(href);
+export const relMenuEntries = (rels: Relation[]) =>
+  rels.map(r => ({ id: r.id, name: r.name, href: relMenuHref(r.id), anchor: '/rels' }));
+
 /** 페어 자관의 [왼쪽, 오른쪽] 캐릭터 id — 상세에서 좌우를 바꿨으면(pairRight) 그 자리대로.
  *  페어가 아니거나 멤버가 둘이 안 되면 null (커플홈 — 다이어리 칸 나눔 등이 상세와 같은 배치를 쓴다) */
 export function pairSides(rel?: Relation): [string, string] | null {
