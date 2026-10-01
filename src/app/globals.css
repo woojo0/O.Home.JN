@@ -1806,7 +1806,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .rel-body{grid-template-columns:1fr;max-width:560px;margin-left:auto;margin-right:auto}
   .rel-center{order:-1}
   .rel-hero h1{font-size:calc(var(--rel-name-size,64px)*.6875*var(--fs,1))} /* 64→44 비율 */
-  .rel-hero .quote{position:static;display:block;margin-top:4px}
+  /* 두 사람 한마디 — 좁은 화면에서는 자관명·캐치프레이즈 아래에 나란히 (커플홈 사용자 요청 — 위아래로 떨어져 나왔다).
+     히어로를 줄바꿈 플렉스로 두고 다른 줄은 가로 전체, 한마디 둘만 맨 뒤(order)에서 반씩 나눠 한 줄에 */
+  .rel-hero{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .rel-hero > *{flex:0 0 100%}
+  .rel-hero .quote{position:static;display:block;flex:1 1 0;min-width:0;order:10;margin-top:10px;padding:0 6px;overflow-wrap:anywhere}
   .qa-wrap{grid-template-columns:1fr;height:auto}
   .qa-list{border-left:none;padding-left:0;max-height:300px}
 }
