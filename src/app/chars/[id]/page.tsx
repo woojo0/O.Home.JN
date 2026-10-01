@@ -190,7 +190,7 @@ function CharDetailInner() {
       {/* AU 미등록 (v1.9 사용자 확정) — base를 보여주지 않고 그 AU에 맞춰 캐릭터를 새로 등록 */}
       {auKey && !auRegistered ? (
         <div className="panel" style={{ textAlign: 'center', padding: 56 }}>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '.14em', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'var(--serif-base)', fontSize: 24, letterSpacing: '.14em', marginBottom: 8 }}>
             {charAus.find(a => a.key === auKey)?.label ?? 'AU'}
           </div>
           <p style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 16 }}>

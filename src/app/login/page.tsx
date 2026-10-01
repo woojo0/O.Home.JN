@@ -70,8 +70,9 @@ export default function LoginPage() {
     <section className="page">
       {/* 타이틀은 카드 안 가운데 정렬 (v1.9 — 메뉴 페이지가 아니라 상단 대제목을 두지 않음) */}
       <div className="panel" style={{ padding: 28, maxWidth: 480, margin: '40px auto 0' }}>
+        {/* 타이틀 폰트가 아니라 기본 세리프 (커플홈 사용자 요청 — 타이틀 폰트는 로고·페이지 제목 자리에만) */}
         <h1 style={{
-          fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '.3em', textAlign: 'center',
+          fontFamily: 'var(--serif-base)', fontSize: 24, letterSpacing: '.3em', textAlign: 'center',
           margin: '4px 0 6px', color: 'var(--ink)',
         }}>LOGIN</h1>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
