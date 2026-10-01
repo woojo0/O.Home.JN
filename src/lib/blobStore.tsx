@@ -19,6 +19,11 @@ function extOf(blob: Blob): string {
   if (t.includes('svg')) return 'svg';
   if (t.includes('jpeg') || t.includes('jpg')) return 'jpg';
   if (t.includes('font') || t.includes('woff')) return 'woff2';
+  // 동영상 (커플홈) — 올바른 확장자라야 브라우저가 바로 재생한다
+  if (t.includes('mp4') || t.includes('m4v')) return 'mp4';
+  if (t.includes('webm')) return 'webm';
+  if (t.includes('quicktime')) return 'mov';
+  if (t.includes('ogg')) return 'ogv';
   if (t.startsWith('text/')) return 'txt';
   return 'bin';
 }

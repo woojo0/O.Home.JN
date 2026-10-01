@@ -122,6 +122,8 @@ export const COLLECTION_OF: Record<string, string> = {
   // 감상타래 글 — 타래 안이 아니라 자기 문서로 (커플홈). 같은 이유로, 타래 안에 두면
   // 상대 오너가 관리자 타래에 이어 쓸 수 없다 (두 사람이 같이 쓰는 타래)
   'ohome.thrposts.v1': 'thread_posts',
+  // Videos 게시판 (커플홈 사용자 요청) — 영상 하나를 파일·링크로 올리는 글. 갤러리와 따로 둔다
+  'ohome.videos.v1': 'videos',
   // 알림 — 기기 보관이던 것을 서버로 (v2.0 포크 제보 「알림이 안 와요」).
   // 행 주인(authorId)을 받는 사람으로 적어, 받는 사람 계정이 어느 기기에서나 받아 간다
   'ohome.notif.v1': 'notifications',

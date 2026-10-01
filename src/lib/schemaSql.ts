@@ -88,6 +88,7 @@ declare content_tables text[] := array[
   'qa_answers',   -- 자관 문답 답변 (v2.0 — 같은 이유로 자관 안이 아니라 자기 행으로)
   'rp_messages',  -- 역극 발화 (v2.0 — 같은 이유로 방 안이 아니라 자기 행으로)
   'thread_posts', -- 감상타래 글 (커플홈 — 같은 이유로 타래 안이 아니라 자기 행으로. 두 사람이 같이 쓴다)
+  'videos',       -- Videos 게시판 (커플홈 — 영상 하나를 파일·링크로)
   'notifications' -- 알림 (v2.0 — 기기 보관이던 것을 서버로: 받은 사람 계정으로 어느 기기에서나)
 ];
 begin

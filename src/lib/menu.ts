@@ -15,6 +15,7 @@ export const FEATURES: { href: string; label: string }[] = [
   { href: '/rp', label: '역극' },
   { href: '/board', label: '리스트' },
   { href: '/gallery', label: '갤러리' },
+  { href: '/videos', label: 'Videos' },   // 영상 게시판 (커플홈)
   { href: '/loadb', label: '로드비' },
   { href: '/tchars', label: '캐릭터' },   // TRPG 캐릭터 — 자놀 캐릭터와는 href로 구분
   { href: '/trpg', label: 'RP LOG' },   // 로그 백업 — 커플홈에서 이름을 RP LOG로 (주소는 /trpg 그대로)
@@ -41,6 +42,7 @@ export const DEFAULT_MENU: MenuItem[] = [
     children: [
       { label: '리스트', href: '/board' },
       { label: '갤러리', href: '/gallery' },
+      { label: 'Videos', href: '/videos' },
       { label: '로드비', href: '/loadb' },
     ],
   },
