@@ -1020,6 +1020,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .spec dt{color:var(--faint);letter-spacing:.06em}
 .spec dd{color:var(--ink)}
 .prose{font-size:calc(14px*var(--fs,1));line-height:1.85;color:#3a3f47}
+/* 탭 내용 속 그림은 카드 가로 안에 (커플홈 사용자 제보 — 큰 그림이 카드를 벗어났다). 게시글 본문(.post-body)과 같은 규칙 */
+.prose img{max-width:100%;height:auto;border-radius:9px}
 .prose b{display:block;margin-bottom:4px}
 .tabnote{margin-top:16px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:calc(11px*var(--fs,1));color:var(--faint)}
 
