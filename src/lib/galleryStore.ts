@@ -221,6 +221,8 @@ export interface DotoriItem {
   thumbCrop?: CropValue;
   ph: string;                // 이미지 없을 때 플레이스홀더
   date: string;              // 등록일 ISO (정렬용)
+  /** 등록한 회원 (커플홈 — 일반 회원도 등록한다). 없는 옛 항목은 관리자 것. 수정·삭제·상태 전환은 본인과 관리자 */
+  authorId?: string;
 }
 
 export const DOTORI_SEED: DotoriItem[] = [];

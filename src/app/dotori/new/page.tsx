@@ -16,14 +16,15 @@ function DotoriNewPageInner() {
   // 큰 글씨 — 추가 섹션이면 그 이름, 눌렀을 때도 그 목록으로 (v2.0 사용자 제보)
   const tt = useSectionTitle('dotori', sec.id, 'ADD DOTORI');
   const router = useRouter();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
   const toast = useToast();
   const [items, setItems] = useLocalList<DotoriItem>('ohome.dotori.v1', DOTORI_SEED);
 
-  if (!isAdmin) {
+  // 일반 회원도 등록한다 (커플홈 사용자 요청) — 등록한 사람을 남겨 수정·삭제는 본인과 관리자만
+  if (!user) {
     return (
       <section className="page">
-        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>관리자 전용 페이지</p></div>
+        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>로그인한 회원만 등록할 수 있습니다</p></div>
       </section>
     );
   }
@@ -35,7 +36,7 @@ function DotoriNewPageInner() {
         onCancel={() => router.push('/dotori' + secQuery('dotori', sec.id))}
         onSave={v => {
           const it: DotoriItem = {
-            id: newId(), ...v, link: v.link, ph: 'cool', date: new Date().toISOString(),
+            id: newId(), ...v, link: v.link, ph: 'cool', date: new Date().toISOString(), authorId: user.id,
           };
           setItems([{ ...it, ...secStamp(sec.id) }, ...items]);
           toast('도토리가 등록되었습니다');
