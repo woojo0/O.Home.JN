@@ -331,7 +331,8 @@ export default function RpPage() {
       <div className={`rp-layout ${mListOpen ? 'mopen' : ''}`}>
         {/* 모바일 전용 접힘 바 — 탭하면 방 목록·상태 필터가 펼쳐짐 (v1.9) */}
         <button type="button" className="rp-mfold" onClick={() => setMListOpen(o => !o)}>
-          <b>{sel ? sel.title : '방 목록'}</b>
+          {/* 모바일에선 채팅 머리(제목·캐릭터명·버튼들)를 숨기므로 여기에 캐릭터 이름까지 (사용자 확정) */}
+          <b>{sel ? sel.title : '방 목록'}{sel && <span className="rl"> · {roomLabel(sel)}</span>}</b>
           <small>MY ROOMS {myRooms.length} {mListOpen ? '▴' : '▾'}</small>
         </button>
         {/* 방 목록 — 내 참여 방만 · 헤더 고정, 리스트만 내부 스크롤 */}
