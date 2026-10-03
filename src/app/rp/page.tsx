@@ -356,14 +356,7 @@ export default function RpPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <span className="pill">{sel.status === 'done' ? (sel.isPublic ? '완결 · 공개' : '완결') : '진행중'}</span>
-                  {/* 표시 방식 전환 (커플홈 사용자 요청) — 대본형 ↔ 아이폰 문자 모양. 방 설정이라 개설자·관리자가 바꾼다 */}
-                  {canManage && (
-                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
-                      data-tip={imsg ? '대본형으로 보기' : '아이폰 문자 모양으로 보기'}
-                      onClick={() => patchRoom({ style: imsg ? 'script' : 'imsg' })}>
-                      {imsg ? '기본' : '메신저'}
-                    </button>
-                  )}
+                  {/* 표시 방식은 개설할 때 정한 그대로 (사용자 확정 — 되돌리는 버튼은 없다). 글마다 「RP」 토글로 원래 모양을 섞는다 */}
                   {/* 역극명 바꾸기 (커플홈 사용자 요청) */}
                   {canManage && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
@@ -464,7 +457,8 @@ export default function RpPage() {
                       <div>
                         <div className="who">{name}</div>
                         <div className="bub">{m.text}</div>
-                        <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>
+                        {/* 메신저 방에서는 시각을 안 적는다 (사용자 확정) — 일반 RP 글도 마찬가지 */}
+                        {!imsg && <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>}
                       </div>
                       {acts}
                     </div>
@@ -504,12 +498,18 @@ export default function RpPage() {
                     onBlur={() => setTimeout(() => setMFocus(false), 180)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
                   {/* 메신저 방에서도 원래 역극 모양으로 보내기 (커플홈 사용자 요청) — 문자 말고 서술·대사를 섞을 때 */}
-                  {imsg && (
-                    <span className="im-plain" data-tip="체크하면 말풍선 대신 원래 역극 모양으로 보냅니다">
-                      <KCheck label="일반 RP" checked={plainRp} onChange={setPlainRp} />
-                    </span>
+                  {imsg ? (
+                    /* ↑ 버튼 위의 빈자리에 「RP」 토글 (사용자 확정) */
+                    <div className="im-actions">
+                      <button type="button" className={`im-plain${plainRp ? ' on' : ''}`}
+                        data-tip={plainRp ? '원래 역극 모양으로 보냅니다 — 누르면 다시 문자 말풍선' : '누르면 말풍선 대신 원래 역극 모양으로 보냅니다'}
+                        aria-pressed={plainRp} onClick={() => setPlainRp(v => !v)}
+                        style={plainRp ? { background: 'var(--ink)', color: '#fff', borderColor: 'var(--ink)' } : undefined}>RP</button>
+                      <button className="im-send" onClick={send} aria-label="SEND">↑</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-dark" onClick={send}>SEND</button>
                   )}
-                  <button className={imsg ? 'im-send' : 'btn btn-dark'} onClick={send} aria-label="SEND">{imsg ? '↑' : 'SEND'}</button>
                 </div>
               )}
             </>
