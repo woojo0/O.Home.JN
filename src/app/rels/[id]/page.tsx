@@ -13,7 +13,7 @@ import {
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
-  findByKey, charPath, relPath, openableRels, relMenuHref,
+  findByKey, charPath, relPath, openableRels, relMenuHref, auParamOf,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
 import { putBlob } from '@/lib/blobStore';
@@ -371,6 +371,25 @@ export default function RelDetailPage() {
   const rel = findByKey(rels, id);
   // 자관 전환 칩으로 다른 자관에 가면 같은 페이지가 재사용될 수 있다 — 보던 AU·일러·탭을 처음 상태로
   useEffect(() => { setAuId('base'); setArtIdx(0); setQaNo(null); setTab('tl'); }, [id]);
+  // 주소의 ?au= (별명 또는 id)로 들어오면 그 AU를 펼친 채 시작 (커플홈 사용자 요청 — AU 페이지의 고유 주소)
+  useEffect(() => {
+    if (!rel) return;
+    const p = new URLSearchParams(window.location.search).get('au');
+    if (!p) return;
+    const a = rel.aus.find(x => x.id !== 'base' && (x.slug?.trim() === p || x.id === p));
+    if (a) setAuId(a.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rel?.id, loaded]);
+  /** AU 고르기 — 화면과 함께 주소(?au=)도 바꿔 두어 그대로 복사해 공유할 수 있게. 원본이면 뗀다 */
+  const selectAu = (next: string) => {
+    setAuId(next);
+    try {
+      const u = new URL(window.location.href);
+      if (next === 'base') u.searchParams.delete('au');
+      else u.searchParams.set('au', rel?.aus.find(x => x.id === next)?.slug?.trim() || next);
+      window.history.replaceState(null, '', u.toString());
+    } catch { /* 무시 */ }
+  };
 
   // 자관별 페이지 테마 (4.18 방식) — 별도 테마컬러면 홈 전체 팔레트를 임시 전환, 벗어나면 원복.
   // AU별 (v1.9): AU에 테마를 지정했으면 그것, 미지정이면 base(원본) 테마 따라가기
@@ -492,7 +511,8 @@ export default function RelDetailPage() {
   // 캐릭터 별명 주소 우선 (v2.0) — 없으면 id 그대로
   const charHref = (cid: string) => {
     const base = charPath(charOf(cid) ?? { id: cid });
-    return auCharKey ? `${base}?au=${encodeURIComponent(auCharKey)}` : base;
+    // AU 프로필 주소 별명이 있으면 그것, 없으면 자관 AU 별명, 그것도 없으면 키 (커플홈)
+    return auCharKey ? `${base}?au=${encodeURIComponent(auParamOf(findChar(chars, cid), rels, auCharKey))}` : base;
   };
   const sideOf = (cid: string) => (isDuo && rel?.members[1]?.charId === cid ? 'r' : 'l');
 
@@ -844,7 +864,7 @@ export default function RelDetailPage() {
             const thumb = isBase ? (rel.thumbId ?? rel.arts?.[0]) : a.arts?.[0];
             return (
               <div key={a.id} className={`au-item ${auId === a.id ? 'on' : ''}`}
-                onClick={() => { setAuId(a.id); setArtIdx(0); setQaNo(null); }}>
+                onClick={() => { selectAu(a.id); setArtIdx(0); setQaNo(null); }}>
                 <CroppedBlobImg fileRef={thumb} crop={isBase ? rel.thumbCrop : undefined}
                   ph={['cool', 'pale', 'red'][i % 3]} />
                 <small>{a.label}</small>
@@ -906,7 +926,7 @@ export default function RelDetailPage() {
             updateRel({ aus: rel.aus.filter(a => a.id !== gone) });
             // 이 AU에 달렸던 문답 답변도 함께 (주인 없는 줄이 남지 않게)
             setQaRows(qaRows.filter(r => !(r.relId === rel.id && r.auId === gone)));
-            if (auId === gone) setAuId('base');
+            if (auId === gone) selectAu('base');
             setAuDelAsk(null);
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setAuDelAsk(null) },
@@ -1509,7 +1529,7 @@ export default function RelDetailPage() {
                     <span className="fx" style={{ flexShrink: 0 }}
                       onClick={() => del.ask(`AU 「${a.label}」를 삭제하시겠습니까?`, () => {
                         updateRel({ aus: rel.aus.filter(x => x.id !== a.id) });
-                        if (auId === a.id) setAuId('base');
+                        if (auId === a.id) selectAu('base');
                       }, '이 AU의 일러·타임라인·문답이 함께 삭제되며 복구할 수 없습니다.')}>✕</span>
                   </>
                 )}

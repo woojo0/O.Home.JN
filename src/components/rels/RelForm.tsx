@@ -63,6 +63,7 @@ export interface RelFormValue {
   quoteColors?: Record<string, { fg?: string; mark?: string }>; // 히어로 대사 글씨/따옴표색 (페어, v1.9)
   fullFront?: string;                          // 앞에 보일 캐릭터 id
   auName?: string;           // AU별 자관명 (v2.0 사용자 요청 — AU 편집일 때만)
+  auSlug?: string;           // AU 페이지 주소 별명 (커플홈 — AU 편집일 때만) /rels/{자관}?au={slug}
   qaHide?: boolean;          // 문답 답변 숨기기 (v2.0 사용자 요청)
   pickedCharIds: string[];   // 등록 시 연동할 내 캐릭터 (수정 모드에선 빈 배열)
 }
@@ -287,6 +288,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
     () => Object.fromEntries(pairMembers.map(m => [m.charId, { fg: mOf(m).quoteColor, mark: mOf(m).quoteMarkColor }])));
   // AU별 자관명 (v2.0 사용자 요청) — 비우면 자관 이름 그대로
   const [auName, setAuName] = useState(auObj?.name ?? '');
+  // AU 페이지 주소 별명 (커플홈 사용자 요청) — /rels/{자관}?au={slug}. 비우면 AU id
+  const [auSlug, setAuSlug] = useState(auObj?.slug ?? '');
   // 문답 답변 가리기 (v2.0 사용자 요청) — 질문은 그대로 두고 답변 내용만
   const [qaHide, setQaHide] = useState(!!initial?.qaHide);
   // 전신 앞뒤도 AU별 (v2.0) — AU에서 바꾼 앞뒤가 원본·다른 AU를 건드리지 않게
@@ -323,6 +326,13 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   };
 
   const save = async () => {
+    // AU 주소 별명 (커플홈) — 형식 확인 + 같은 자관의 다른 AU와 겹치지 않게
+    if (auObj && auSlug.trim()) {
+      if (!isValidSlug(auSlug.trim())) { toast('AU 주소는 영문 소문자·숫자·하이픈만 쓸 수 있습니다'); return; }
+      if (initial?.aus.some(a => a.id !== auObj.id && (a.slug === auSlug.trim() || a.id === auSlug.trim()))) {
+        toast('이미 다른 AU가 쓰는 주소입니다 — 다른 주소를 입력해 주세요'); return;
+      }
+    }
     if (!name.trim()) { toast('자관 이름을 입력해 주세요'); return; }
     // 페이지 주소 (v1.9 / 수정도 가능 v2.0) — 유효성·중복 검사
     if (slug && slug !== (initial?.slug ?? '')) {
@@ -362,6 +372,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       themeTone: themeMode === 'custom' ? themeTone : undefined,
       cp, cpText: cpText.trim() || undefined,
       auName: auObj ? auName.trim() : undefined,
+      auSlug: auObj ? auSlug.trim() : undefined,
       qaHide: qaHide || undefined,
       fulls: pairMembers.length
         ? Object.fromEntries(await Promise.all(pairMembers.map(async m => {
@@ -691,6 +702,16 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                   style={{ fontFamily: familyOf(fontId), letterSpacing: '.1em' }} />
                 <p className="hint" style={{ margin: '5px 0 0' }}>
                   이 AU를 볼 때만 쓰는 이름 — 비우면 자관 이름을 그대로 씁니다
+                </p>
+                {/* AU 페이지 주소 (커플홈 사용자 요청 — 「AU 페이지도 AU 프로필도 고유 주소를」).
+                    /rels/{자관}?au={주소}. 멤버의 AU 프로필 주소(?au=)에도 같은 별명을 쓴다 */}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--faint)', whiteSpace: 'nowrap' }}>?au=</span>
+                  <KInput placeholder={`AU 주소 (비우면 ${auObj.id})`} value={auSlug}
+                    onChange={e => setAuSlug(slugify(e.target.value))} style={{ flex: 1 }} />
+                </div>
+                <p className="hint" style={{ margin: '5px 0 0' }}>
+                  이 AU 페이지의 주소 — 영문 소문자·숫자·하이픈. 캐릭터의 AU 프로필 주소(?au=)에도 그대로 쓰입니다
                 </p>
               </div>
             )}

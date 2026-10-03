@@ -69,6 +69,8 @@ export interface Character {
 /** AU 캐릭터 프로필 (v1.9 전면 확장) — 이름·키·성별부터 전부 AU별로 달라질 수 있음.
  *  지정된 필드만 base를 대체 (구버전 basicHtml/arts만 있는 데이터도 그대로 동작) */
 export interface AuCharProfile {
+  /** 이 AU 프로필의 주소 별명 (커플홈 사용자 요청 — 「AU 프로필의 주소를 정할 수 없다」) — /chars/{캐릭터}?au={slug} */
+  slug?: string;
   basicHtml?: string;
   arts?: string[];
   name?: string;
@@ -89,6 +91,27 @@ export interface AuCharProfile {
 }
 
 /** AU 프로필을 합성한 표시용 캐릭터 — AU에서 지정한 필드만 대체 (상세·편집 프리필 공용) */
+/** AU 키(relId:auId)를 주소에 쓸 때의 표기 (커플홈) — 캐릭터 AU 프로필 별명 > 자관 AU 별명 > 키 */
+export function auParamOf(c: Character | undefined, rels: Relation[], key: string): string {
+  const own = c?.auProfiles?.[key]?.slug?.trim();
+  if (own) return own;
+  const [relId, auId] = key.split(':');
+  const au = rels.find(r => r.id === relId)?.aus.find(a => a.id === auId);
+  return au?.slug?.trim() || key;
+}
+
+/** ?au= 값 → AU 키 — 프로필 별명·자관 AU 별명·키 어느 것으로 들어와도 (별명을 바꿔도 옛 주소가 살아 있게) */
+export function resolveAuKey(c: Character | undefined, rels: Relation[], param: string | null): string | null {
+  if (!param || !c) return param;
+  for (const [k, p] of Object.entries(c.auProfiles ?? {})) if (p.slug?.trim() === param) return k;
+  for (const r of rels) {
+    if (!r.members.some(m => m.charId === c.id)) continue;
+    const au = r.aus.find(a => a.id !== 'base' && a.slug?.trim() === param);
+    if (au) return `${r.id}:${au.id}`;
+  }
+  return param;
+}
+
 export function charWithAu(c: Character, auKey?: string | null): Character {
   const p = auKey ? c.auProfiles?.[auKey] : undefined;
   if (!p) return c;
@@ -333,6 +356,8 @@ export interface RelAu {
   catchphrase: string;
   /** AU별 자관명 (v2.0 사용자 요청) — 비우면 자관 이름을 그대로 쓴다 */
   name?: string;
+  /** AU 페이지 주소 별명 (커플홈 사용자 요청) — /rels/{자관}?au={slug}. 멤버의 AU 프로필 주소에도 쓴다 (프로필 별명이 없을 때) */
+  slug?: string;
   /** AU별 이름/본문 폰트 (v2.0 사용자 제보 — 여태 AU 편집의 폰트가 원본에 저장돼 전체가 같이 바뀌었다).
    *  미지정이면 자관 기본 폰트 */
   fontId?: string;

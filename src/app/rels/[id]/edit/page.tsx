@@ -85,6 +85,7 @@ function RelEditInner() {
                   ...a, arts: v.arts, catchphrase: v.catchphrase,
                   // AU별 자관명 (v2.0 사용자 요청) — 비우면 자관 이름 그대로 쓰게 아예 지운다
                   name: v.auName?.trim() ? v.auName.trim() : undefined,
+                  slug: v.auSlug?.trim() || undefined,   // AU 페이지 주소 별명 (커플홈) — 비우면 id
                   // AU별 폰트·전신 앞뒤 (v2.0 사용자 제보) — 원본이 아니라 이 AU에 담는다
                   fontId: v.fontId, bodyFontId: v.bodyFontId, fullFront: v.fullFront,
                   titleSize: v.titleSize, titleBold: v.titleBold,   // 자관명 크기·굵게 (커플홈)

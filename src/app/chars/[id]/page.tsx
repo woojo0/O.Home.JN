@@ -7,7 +7,7 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey, relsWithoutChar } from '@/lib/charStore';
+import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey, relsWithoutChar, resolveAuKey, auParamOf } from '@/lib/charStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
 import { useTheme } from '@/lib/ThemeProvider';
@@ -45,7 +45,18 @@ function CharDetailInner() {
       : [])
     : []), [rels, ch]);
   // AU 편집에서 ?au= 로 돌아오면 그 AU가 선택된 채 시작
-  const [auKey, setAuKey] = useState<string | null>(() => params.get('au'));
+  // ?au= 는 별명(프로필 별명·자관 AU 별명)으로도 들어온다 (커플홈 사용자 요청 — AU 프로필의 고유 주소) → 키로 푼다
+  const [auSel, setAuSel] = useState<string | null>(() => params.get('au'));
+  const auKey = resolveAuKey(ch, rels, auSel);
+  /** AU 고르기 — 주소(?au=)도 별명으로 바꿔 두어 그대로 복사해 공유할 수 있게. 원본이면 뗀다 */
+  const selectAu = (k: string | null) => {
+    setAuSel(k);
+    try {
+      const u = new URL(window.location.href);
+      if (k) u.searchParams.set('au', auParamOf(ch, rels, k)); else u.searchParams.delete('au');
+      window.history.replaceState(null, '', u.toString());
+    } catch { /* 무시 */ }
+  };
   // 대표 아트 우클릭 → 상세 화면에 보일 위치 조정 (v2.0)
   const [artCtx, setArtCtx] = useState<{ x: number; y: number; ref: string } | null>(null);
   // 편집 중인 아트 참조 + 그때 실제 표시 영역의 가로/세로 비 (3:4가 아니라 화면 높이에 따라 달라진다)
@@ -88,7 +99,7 @@ function CharDetailInner() {
     return () => setPageTheme(null);
   }, [pageColor, setPageTheme]);
 
-  const curTab = eff?.tabs.find(t => t.id === tab);
+  const curTab = eff?.tabs?.find(t => t.id === tab);   // 탭 목록이 없는 옛 데이터도 터지지 않게
   const tabHtml = useMemo(
     () => (loaded && curTab ? sanitizeHtml(curTab.html) : ''),
     [loaded, curTab],
@@ -165,7 +176,7 @@ function CharDetailInner() {
       {charAus.length > 0 && (
         <div className="au-list" style={{ justifyContent: 'flex-end', marginBottom: 10 }}>
           <div className={`au-item ${auKey === null ? 'on' : ''} ph ${ch.thumbClass}`} style={{ borderColor: auKey === null ? 'var(--accent)' : 'var(--line)' }}
-            onClick={() => setAuKey(null)}>
+            onClick={() => selectAu(null)}>
             {(ch.thumbId || ch.arts?.[0]) && <CroppedBlobImg fileRef={ch.thumbId ?? ch.arts?.[0]} crop={ch.thumbCrop} ph={ch.thumbClass} />}
             <small>원본</small>
           </div>
@@ -179,7 +190,7 @@ function CharDetailInner() {
               <div key={a.key} className={`au-item ${auKey === a.key ? 'on' : ''} ph ${ch.thumbClass}`}
                 style={{ borderColor: auKey === a.key ? 'var(--accent)' : 'var(--line)' }}
                 data-tip={`${a.relName} · ${a.label}`}
-                onClick={() => setAuKey(a.key)}>
+                onClick={() => selectAu(a.key)}>
                 {ref && <CroppedBlobImg fileRef={ref} crop={p?.thumbCrop} ph={ch.thumbClass} />}
                 <small>{a.label}</small>
               </div>
