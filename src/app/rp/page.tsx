@@ -112,6 +112,7 @@ export default function RpPage() {
   }, [sel?.id, msgRows.length]);
 
   const [text, setText] = useState('');
+  const [plainRp, setPlainRp] = useState(false);   // 메신저 방에서 「일반 RP」로 보내기 (커플홈 사용자 요청) — 원래 역극 모양
   const send = () => {
     if (!sel || !user) return;
     let t = text.trim();
@@ -124,6 +125,7 @@ export default function RpPage() {
       // 발화 당시 소유 기록 — 캐릭터가 삭제돼도 재연동 시 어느 리스트에서 고를지 판별 (v1.9)
       charOwn: kind === 'char' ? rpChars.find(c => c.id === speaker)?.own : undefined,
       authorId: user.id, text: t, date: new Date().toISOString(),
+      ...(imsg && plainRp ? { rp: true } : {}),   // 메신저 방의 「일반 RP」 — 원래 역극 모양으로 (커플홈)
     };
     // 방은 건드리지 않는다 — 발화만 자기 행으로 (v2.0)
     setMsgRows([...msgRows, { ...m, roomId: sel.id }]);
@@ -412,7 +414,7 @@ export default function RpPage() {
                   if (m.kind === 'desc') {
                     // 메신저 모양에서는 지문이 아이폰 문자의 가운데 안내 글씨처럼.
                     // 「2008.07.03」처럼 날짜로 시작하는 지문은 날짜 줄로 (사용자 요청 — 시각은 손으로 적는다)
-                    if (imsg) {
+                    if (imsg && !m.rp) {
                       const dm = m.text.trim().match(/^(\d{4}\s?[.\-/]\s?\d{1,2}\s?[.\-/]\s?\d{1,2}\.?)([\s\S]*)$/);
                       return (
                         <div key={m.id} className={`im-sys${dm ? ' im-date' : ''}`}>
@@ -431,14 +433,15 @@ export default function RpPage() {
                   const rightSide = ch
                     ? (!!charGrant(ch, user.id) || (!!ch.own && isAdmin))
                     : (!!m.charOwn && isAdmin);
-                  if (imsg) {
+                  if (imsg && !m.rp) {
                     /* 아이폰 문자(iMessage) 모양 (커플홈 사용자 요청) — 내 쪽은 파란 말풍선, 상대는 회색.
                        같은 캐릭터가 이어 말하면 묶어서 꼬리·얼굴은 묶음의 마지막에만, 30분 넘게 비면 가운데 시각 */
                     const GAP = 30 * 60 * 1000;
                     const prev = arr[mi - 1], next = arr[mi + 1];
                     const gap = !prev || Date.parse(m.date) - Date.parse(prev.date) > GAP;
-                    const first = gap || prev.kind !== 'char' || prev.charId !== m.charId;
-                    const last = !next || next.kind !== 'char' || next.charId !== m.charId || Date.parse(next.date) - Date.parse(m.date) > GAP;
+                    // 「일반 RP」로 보낸 글은 묶음에 끼지 않는다
+                    const first = gap || prev.kind !== 'char' || prev.charId !== m.charId || !!prev.rp;
+                    const last = !next || next.kind !== 'char' || next.charId !== m.charId || !!next.rp || Date.parse(next.date) - Date.parse(m.date) > GAP;
                     return (
                       <React.Fragment key={m.id}>
                         {/* 시각 줄은 두지 않는다 (사용자 확정 — 만들어진 역극이라 실제 시간은 의미가 없다). 묶음만 가른다 */}
@@ -500,6 +503,12 @@ export default function RpPage() {
                     onFocus={() => setMFocus(true)}
                     onBlur={() => setTimeout(() => setMFocus(false), 180)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
+                  {/* 메신저 방에서도 원래 역극 모양으로 보내기 (커플홈 사용자 요청) — 문자 말고 서술·대사를 섞을 때 */}
+                  {imsg && (
+                    <span className="im-plain" data-tip="체크하면 말풍선 대신 원래 역극 모양으로 보냅니다">
+                      <KCheck label="일반 RP" checked={plainRp} onChange={setPlainRp} />
+                    </span>
+                  )}
                   <button className={imsg ? 'im-send' : 'btn btn-dark'} onClick={send} aria-label="SEND">{imsg ? '↑' : 'SEND'}</button>
                 </div>
               )}

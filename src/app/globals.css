@@ -527,6 +527,9 @@ a{color:inherit;text-decoration:none}
 .im-sys .m-act{position:absolute;top:50%;transform:translateY(-50%);left:calc(100% + 6px);display:flex;gap:2px;background:var(--panel-solid);border:1px solid var(--line);border-radius:7px;padding:1px 2px;opacity:0;transition:.13s;white-space:nowrap}
 /* 입력줄 — 둥근 칸 + 파란 ↑ 버튼 */
 .rp-input.imsg{align-items:flex-end}
+.im-plain{align-self:center;white-space:nowrap;flex-shrink:0;font-size:calc(11px*var(--fs,1))}
+/* 메신저 방 안의 「일반 RP」 글 — 원래 역극 모양 그대로, 말풍선 묶음과 떨어뜨린다 */
+.rp-msgs.imsg .msg,.rp-msgs.imsg .msg-desc{margin:10px 0}
 .rp-input.imsg textarea{border-radius:20px;padding:10px 14px;min-height:40px!important;background:var(--panel-solid)}
 .im-send{width:34px;height:34px;border-radius:50%;background:#0b84ff;color:#fff;font-size:17px;font-weight:700;display:grid;place-items:center;flex-shrink:0;transition:.15s}
 .im-send:hover{background:#0a74e0}

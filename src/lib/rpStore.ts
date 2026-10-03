@@ -11,6 +11,8 @@ export interface RpMessage {
   authorId: string;                 // 작성 회원 (수정/삭제 권한)
   text: string;
   date: string;                     // ISO
+  /** 메신저 모양 방에서 「일반 RP」로 보낸 글 (커플홈 사용자 요청) — 말풍선 대신 원래 역극 모양으로 보인다 */
+  rp?: boolean;
 }
 
 export interface RpRoom {
