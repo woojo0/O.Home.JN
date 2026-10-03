@@ -10,6 +10,7 @@ import {
   RpMessageRow, RP_MSG_KEY, RP_MSG_SEED, messagesFor, rpMarkRead, rpMemberIds,
 } from '@/lib/rpStore';
 import { Character, CHAR_SEED, Relation, REL_SEED, charGrant, charWithAu } from '@/lib/charStore';
+import { phStyle } from '@/lib/color';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
 import { KInput, KTextarea, KSelect, KCheck } from '@/components/ui/Kit';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -19,8 +20,9 @@ import { RpLogModal } from '@/components/rp/RpLogModal';
 
 /** 캐릭터 얼굴 칩 (썸네일 or 데모 플레이스홀더) */
 function Face({ ch, className }: { ch?: Character; className: string }) {
+  // 사진이 없으면 캐릭터 테마색 자리표시자 (커플홈 사용자 요청)
   return (
-    <div className={`${className} ${!ch?.thumbId ? `ph ${ch?.thumbClass ?? ''}` : ''}`}>
+    <div className={`${className} ${!ch?.thumbId ? `ph ${ch?.thumbClass ?? ''}` : ''}`} style={!ch?.thumbId ? phStyle([ch?.color]) : undefined}>
       {ch?.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
     </div>
   );
@@ -424,13 +426,14 @@ export default function RpPage() {
                     const last = !next || next.kind !== 'char' || next.charId !== m.charId || Date.parse(next.date) - Date.parse(m.date) > GAP;
                     return (
                       <React.Fragment key={m.id}>
-                        {gap && <div className="im-time">{fmtHM(m.date)}</div>}
+                        {/* 시각 줄은 두지 않는다 (사용자 확정 — 만들어진 역극이라 실제 시간은 의미가 없다). 묶음만 가른다 */}
                         <div className={`im-msg ${rightSide ? 'me' : 'them'}${first ? ' first' : ''}${last ? ' last' : ''}`}
                           style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
                           {!rightSide && <span className="im-face">{last && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
                             {!rightSide && first && <div className="im-who">{name}</div>}
-                            <div className="im-bub">{m.text}</div>
+                            {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
+                            <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
                           </div>
                           {acts}
                         </div>
