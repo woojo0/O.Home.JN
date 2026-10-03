@@ -498,7 +498,8 @@ a{color:inherit;text-decoration:none}
 .im-face .f{width:26px;height:26px;border-radius:50%;position:relative;overflow:hidden}
 .im-col{display:flex;flex-direction:column;min-width:0}
 .im-msg.me .im-col{align-items:flex-end}
-.im-who{font-size:calc(10px*var(--fs,1));color:#8e8e93;margin:0 0 2px 12px;font-family:var(--sans-base)}
+/* 보낸 캐릭터 이름 — 말풍선 왼쪽 끝에 맞춘다 (사용자 제보: 글씨 시작선(12px 안쪽)에 맞추니 떠 보였다) */
+.im-who{font-size:calc(10px*var(--fs,1));color:#8e8e93;margin:0 0 3px 4px;font-family:var(--sans-base);white-space:nowrap}
 .im-bub{position:relative;padding:7px 12px;border-radius:18px;font-size:calc(13px*var(--fs,1));line-height:1.45;white-space:pre-line;word-break:break-word;font-family:var(--sans-base);
   background:#e9e9eb;color:#000;max-width:100%}
 .im-msg.me .im-bub{background:#0b84ff;color:#fff}
