@@ -26,7 +26,7 @@ import { useMenuSettings, removeFromTree, defaultTree } from '@/lib/menuStore';
 import { Tip, KInput, KTextarea, KSelect, KRadio, KCheck } from '@/components/ui/Kit';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
 import { ColorField } from '@/components/ui/ColorField';
-import { withAlpha } from '@/lib/color';
+import { withAlpha, phStyle } from '@/lib/color';
 import { DragList } from '@/components/ui/DragList';
 import { BlobImg, useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
@@ -64,7 +64,8 @@ function CharFace({ c, className, style }: {
   c?: Character; className?: string; style?: React.CSSProperties;
 }) {
   const rep = c?.thumbId ?? c?.arts?.[0];
-  if (!rep) return <div className={`${className ?? ''} ph ${c?.thumbClass ?? ''}`} style={style} />;
+  // 이미지가 없으면 캐릭터 테마색 자리표시자 (커플홈 사용자 요청)
+  if (!rep) return <div className={`${className ?? ''} ph ${c?.thumbClass ?? ''}`} style={{ ...phStyle([c?.color]), ...style }} />;
   return (
     <div className={className} style={{ position: 'relative', overflow: 'hidden', ...style }}>
       <CroppedBlobImg fileRef={rep} crop={c?.thumbCrop} />
@@ -149,7 +150,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
             <CroppedBlobImg fileRef={rep} crop={member.faceCrop ?? char.thumbCrop} />
           </div>
         ) : (
-          <div className={`face ph ${char.thumbClass}`} />
+          <div className={`face ph ${char.thumbClass}`} style={phStyle([char.color])} />
         )}
         <div>
           {/* 이름 폰트는 캐릭터 프로필에서 지정한 것을 그대로 쓰고,
@@ -866,7 +867,9 @@ export default function RelDetailPage() {
               <div key={a.id} className={`au-item ${auId === a.id ? 'on' : ''}`}
                 onClick={() => { selectAu(a.id); setArtIdx(0); setQaNo(null); }}>
                 <CroppedBlobImg fileRef={thumb} crop={isBase ? rel.thumbCrop : undefined}
-                  ph={['cool', 'pale', 'red'][i % 3]} />
+                  ph={['cool', 'pale', 'red'][i % 3]}
+                  /* 이미지가 없는 AU 네모는 두 사람의 테마색 그라데이션 (커플홈 사용자 요청) */
+                  phStyle={phStyle(rel.members.slice(0, 2).map(m => findChar(chars, m.charId)?.color))} />
                 <small>{a.label}</small>
               </div>
             );
@@ -1067,9 +1070,9 @@ export default function RelDetailPage() {
               return (
                 <div key={m.charId} className="mrow" style={{ ['--cc' as string]: rgbTriple(c.color) }}
                   onClick={() => router.push(charHref(m.charId))}>
-                  <div className={`face ph ${c.thumbClass}`}>
+                  <div className={`face ph ${c.thumbClass}`} style={phStyle([c.color])}>
                     {!unreg && (c.arts?.[0] ?? c.thumbId) && (
-                      <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} />
+                      <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} phStyle={phStyle([c.color])} />
                     )}
                   </div>
                   <div className="nm">

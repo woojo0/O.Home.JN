@@ -8,6 +8,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
 import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED , findByKey, relsWithoutChar, resolveAuKey, auParamOf } from '@/lib/charStore';
+import { phStyle } from '@/lib/color';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
 import { useTheme } from '@/lib/ThemeProvider';
@@ -175,7 +176,8 @@ function CharDetailInner() {
       {/* AU 프로필 리스트 (v1.9) — 자관에 추가된 AU가 있으면 우상단, 각 AU의 저장 썸네일 기준 */}
       {charAus.length > 0 && (
         <div className="au-list" style={{ justifyContent: 'flex-end', marginBottom: 10 }}>
-          <div className={`au-item ${auKey === null ? 'on' : ''} ph ${ch.thumbClass}`} style={{ borderColor: auKey === null ? 'var(--accent)' : 'var(--line)' }}
+          {/* 이미지가 없을 때의 네모 색은 캐릭터 테마색 (커플홈 사용자 요청) */}
+          <div className={`au-item ${auKey === null ? 'on' : ''} ph ${ch.thumbClass}`} style={{ ...phStyle([ch.color]), borderColor: auKey === null ? 'var(--accent)' : 'var(--line)' }}
             onClick={() => selectAu(null)}>
             {(ch.thumbId || ch.arts?.[0]) && <CroppedBlobImg fileRef={ch.thumbId ?? ch.arts?.[0]} crop={ch.thumbCrop} ph={ch.thumbClass} />}
             <small>원본</small>
@@ -188,7 +190,7 @@ function CharDetailInner() {
             const ref = p?.thumbId ?? p?.arts?.[0];
             return (
               <div key={a.key} className={`au-item ${auKey === a.key ? 'on' : ''} ph ${ch.thumbClass}`}
-                style={{ borderColor: auKey === a.key ? 'var(--accent)' : 'var(--line)' }}
+                style={{ ...phStyle([p?.color ?? ch.color]), borderColor: auKey === a.key ? 'var(--accent)' : 'var(--line)' }}
                 data-tip={`${a.relName} · ${a.label}`}
                 onClick={() => selectAu(a.key)}>
                 {ref && <CroppedBlobImg fileRef={ref} crop={p?.thumbCrop} ph={ch.thumbClass} />}
@@ -229,7 +231,7 @@ function CharDetailInner() {
         {(() => {
           const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
           if (arts.length === 0 && !eff.artUrl) {
-            return <div className={`profile-center ph ${ch.thumbClass}`}><span>CHARACTER FULL ART</span></div>;
+            return <div className={`profile-center ph ${ch.thumbClass}`} style={phStyle([eff?.color ?? ch.color])}><span>CHARACTER FULL ART</span></div>;
           }
           const cur = Math.min(artIdx, arts.length - 1);
           return (
@@ -248,7 +250,7 @@ function CharDetailInner() {
                   맞지 않는다 — 여기서 따로 잡은 값이 있을 때만 쓰고, 없으면 가운데 기준 (v2.0) */}
               <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
                 crop={cur === 0 ? eff.artCrop : undefined}
-                ph={ch.thumbClass} label="CHARACTER FULL ART" />
+                ph={ch.thumbClass} phStyle={phStyle([eff?.color ?? ch.color])} label="CHARACTER FULL ART" />
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                   {arts.map((_, i) => (

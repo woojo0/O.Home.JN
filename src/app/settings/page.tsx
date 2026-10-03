@@ -40,6 +40,7 @@ import { allBlobs, putBlobAs, useBlobUrl, getBlob } from '@/lib/blobStore';
 import { parseAni } from '@/lib/aniCursor';
 import { fileDrop } from '@/lib/dnd';
 import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relsWithoutChar, relMenuEntries } from '@/lib/charStore';
+import { phStyle } from '@/lib/color';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat } from '@/lib/diaryStore';
@@ -872,7 +873,7 @@ function CharPane() {
         return (
           <div key={c.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '9px 2px', borderBottom: '1px dashed var(--line)' }}>
             <div style={{ width: 34, aspectRatio: '3/4', borderRadius: 7, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
-              <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} />
+              <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} phStyle={phStyle([c.color])} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <b style={{ fontSize: 13 }}><span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span></b>
