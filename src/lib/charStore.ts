@@ -226,6 +226,8 @@ export type RelCpTag = 'cp' | 'ncp';
  * AU 쪽에 따로 담아 두고, 여기 없는 값만 자관 기본을 그대로 쓴다(→ `auMember`).
  */
 export interface RelAuMember {
+  /** 이 AU에서 부르는 이름 (커플홈 사용자 요청 — 「AU가 바뀌면 이름도 바뀔 수 있다」). 비우면 캐릭터 이름(AU 프로필 이름이 있으면 그것) */
+  name?: string;
   quote?: string;
   fullScale?: number;
   fullOffX?: number;
@@ -243,13 +245,18 @@ export interface RelAuMember {
  *  base(원본) AU이거나 정해 둔 게 없으면 자관 멤버를 그대로 돌려준다. */
 export function auMember(m: RelMember, au?: RelAu): RelMember {
   const o = au?.mset?.[m.charId];
-  if (!o) return m;
   const out = { ...m };
   // undefined는 「안 정했다」는 뜻 — 그대로 덮으면 자관 기본까지 지워진다
-  (Object.keys(o) as (keyof RelAuMember)[]).forEach(k => {
-    const v = o[k];
-    if (v !== undefined) (out as Record<string, unknown>)[k] = v;
-  });
+  if (o) {
+    (Object.keys(o) as (keyof RelAuMember)[]).forEach(k => {
+      if (k === 'name') return;   // AU 이름은 캐릭터 표시 쪽(charOf)에서 쓴다 — 멤버 데이터에는 없는 칸
+      const v = o[k];
+      if (v !== undefined) (out as Record<string, unknown>)[k] = v;
+    });
+  }
+  // 한마디는 AU마다 따로 (커플홈 사용자 제보 — 「새 AU를 만들었는데 한마디가 그대로 이어져 있었다」).
+  // 색·크기 같은 설정은 안 정했으면 자관 기본을 따르지만, 대사는 그 AU에서 적은 것만 보인다
+  if (au && au.id !== 'base') out.quote = o?.quote ?? '';
   return out;
 }
 

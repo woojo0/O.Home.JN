@@ -106,6 +106,7 @@ function RelEditInner() {
                     fullOffX: v.fullOffsets?.[m.charId]?.x,
                     fullOffY: v.fullOffsets?.[m.charId]?.y,
                     quote: v.quotes?.[m.charId],
+                    name: v.names?.[m.charId]?.trim() || undefined,   // 이 AU에서 부르는 이름 (커플홈) — 비우면 지운다
                     nameSize: v.nameSizes?.[m.charId],
                     nameBold: v.nameBolds?.[m.charId],
                     quoteColor: v.quoteColors?.[m.charId]?.fg,

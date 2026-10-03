@@ -481,7 +481,11 @@ export default function RelDetailPage() {
   const auCharKey = rel && !isBaseAu && au ? `${rel.id}:${au.id}` : null;
   const charOf = (cid: string) => {
     const c = findChar(chars, cid);
-    return c && auCharKey ? charWithAu(c, auCharKey) : c;
+    if (!c || !auCharKey) return c;
+    // 이 AU에서 부르는 이름을 자관 수정(AU)에서 정했으면 그것 (커플홈 사용자 요청) — AU 프로필 이름보다 우선
+    const auName = au?.mset?.[cid]?.name?.trim();
+    const merged = charWithAu(c, auCharKey);
+    return auName ? { ...merged, name: auName } : merged;
   };
   // AU 선택 중 그 캐릭터의 AU 프로필 미등록 여부 + 캐릭터 페이지 링크(au 유지) (v1.9)
   const auUnregOf = (cid: string) => !!auCharKey && !findChar(chars, cid)?.auProfiles?.[auCharKey];
@@ -923,7 +927,8 @@ export default function RelDetailPage() {
         ]} />
 
       <div className="rel-hero">
-        {isDuo && pairSlots[0] && (
+        {/* 한마디가 비어 있으면 따옴표만 남지 않게 아예 그리지 않는다 (AU는 자기 대사만 — auMember) */}
+        {isDuo && pairSlots[0] && !!pairSlots[0].quote?.trim() && (
           <div className="quote l" style={{
             color: pairSlots[0].quoteColor,
             ['--q-mark' as string]: pairSlots[0].quoteMarkColor,
@@ -950,7 +955,7 @@ export default function RelDetailPage() {
         <div className="catch" style={{ color: auSt.cpColor }}>
           {au?.catchphrase || rel.catchphrase}
         </div>
-        {isDuo && pairSlots[1] && (
+        {isDuo && pairSlots[1] && !!pairSlots[1].quote?.trim() && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,
             ['--q-mark' as string]: pairSlots[1].quoteMarkColor,

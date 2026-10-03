@@ -57,6 +57,7 @@ export interface RelFormValue {
   fullScales?: Record<string, number>;         // 전신 크기 % (휠 조절)
   fullOffsets?: Record<string, { x: number; y: number }>; // 전신 위치 오프셋 % (드래그, v1.9)
   quotes?: Record<string, string>;                              // 히어로 좌/우 한마디 문구 (v2.0)
+  names?: Record<string, string>;                               // 이 AU에서 부르는 이름 (커플홈 — AU 편집일 때만)
   nameSizes?: Record<string, number>;                           // 멤버 카드 이름 크기 px (v2.0)
   nameBolds?: Record<string, boolean>;                          // 멤버 카드 이름 볼드 (v2.0 — 기본 켜짐)
   quoteColors?: Record<string, { fg?: string; mark?: string }>; // 히어로 대사 글씨/따옴표색 (페어, v1.9)
@@ -272,6 +273,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   // 히어로 좌/우 한마디 — 색만 정할 수 있고 문구를 고칠 곳이 없었다 (v2.0 사용자 발견)
   const [quotes, setQuotes] = useState<Record<string, string>>(
     () => Object.fromEntries(pairMembers.map(m => [m.charId, mOf(m).quote ?? ''])));
+  // 이 AU에서 부르는 이름 (커플홈 사용자 요청) — AU 편집일 때만. 비우면 캐릭터 이름 그대로
+  const [names, setNames] = useState<Record<string, string>>(
+    () => Object.fromEntries(pairMembers.map(m => [m.charId, auObj?.mset?.[m.charId]?.name ?? ''])));
   // 멤버 카드 이름 크기 (v2.0) — 카드 폭이 좁아 이름마다 알맞은 크기가 다르다
   const [nameSizes, setNameSizes] = useState<Record<string, number>>(
     () => Object.fromEntries(pairMembers.map(m => [m.charId, mOf(m).nameSize ?? 17])));
@@ -368,6 +372,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       fullScales: pairMembers.length ? fullScales : undefined,
       fullOffsets: pairMembers.length ? fullOffsets : undefined,
       quotes: pairMembers.length ? quotes : undefined,
+      names: auObj && pairMembers.length ? names : undefined,
       nameSizes: pairMembers.length ? nameSizes : undefined,
       nameBolds: pairMembers.length ? nameBolds : undefined,
       quoteColors: pairMembers.length ? quoteColors : undefined,
@@ -544,8 +549,24 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             )}
             <p className="hint" style={{ margin: '4px 0 0' }}>드래그 = 위치 · 휠 = 크기 · 우클릭 = 앞으로/뒤로 — 미리보기 비율이 상세 화면과 동일합니다</p>
 
+            {/* 이 AU에서 부르는 이름 (커플홈 사용자 요청 — 「AU가 바뀌면 이름도 바뀔 수 있는데 바꿀 데가 없다」).
+                자관 페이지의 멤버 카드·목록에 쓴다. 캐릭터 페이지의 AU 프로필과는 별개 */}
+            {auObj && (
+              <>
+                <label className="k-label" style={{ margin: '10px 0 0' }}>이름 — 이 AU에서 부르는 이름</label>
+                {pairMembers.map((m, i) => (
+                  <div key={m.charId} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <b style={{ fontSize: 12, width: 92, flexShrink: 0 }}>{i === 0 ? '왼쪽' : '오른쪽'} · {memberNames?.[m.charId] ?? m.charId}</b>
+                    <KInput value={names[m.charId] ?? ''}
+                      onChange={e => setNames(s => ({ ...s, [m.charId]: e.target.value }))}
+                      placeholder="비우면 캐릭터 이름 그대로" style={{ flex: 1 }} />
+                  </div>
+                ))}
+              </>
+            )}
+
             {/* 좌/우 한마디 문구 (v2.0 사용자 발견 — 색만 있고 문구 칸이 없었다) */}
-            <label className="k-label" style={{ margin: '10px 0 0' }}>한마디 — 상단 좌/우 대사</label>
+            <label className="k-label" style={{ margin: '10px 0 0' }}>한마디 — 상단 좌/우 대사{auObj ? ' (이 AU에서만)' : ''}</label>
             {pairMembers.map((m, i) => (
               <div key={m.charId} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <b style={{ fontSize: 12, width: 92, flexShrink: 0 }}>{i === 0 ? '왼쪽' : '오른쪽'} · {memberNames?.[m.charId] ?? m.charId}</b>
