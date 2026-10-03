@@ -539,9 +539,10 @@ a{color:inherit;text-decoration:none}
 .im-line textarea{flex:1;min-width:0}
 .im-attach:hover{background:#dcdce0;color:#3a3a3f}
 .im-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.im-pv{position:relative;width:96px;height:72px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+/* 보내기 전 미리보기 — 작게 (사용자 요청: 입력칸 위에 크게 뜨는 게 거슬렸다) */
+.im-pv{position:relative;width:56px;height:42px;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
 .im-pv img{width:100%;height:100%;object-fit:cover;display:block}
-.im-pv .x{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:10px;display:grid;place-items:center}
+.im-pv .x{position:absolute;top:2px;right:2px;width:15px;height:15px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:9px;display:grid;place-items:center}
 /* 사진은 말풍선 안에 (사용자 확정): 말풍선색 테두리 4px 안에 작은 썸네일, 글이 있으면 그 아래. 누르면 크게 */
 .im-bub.has-pic{padding:4px}
 .im-pic{width:150px;max-width:100%;border-radius:15px;overflow:hidden;cursor:zoom-in;line-height:0}
