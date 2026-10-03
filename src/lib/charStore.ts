@@ -112,6 +112,33 @@ export function resolveAuKey(c: Character | undefined, rels: Relation[], param: 
   return param;
 }
 
+/** 캐릭터를 AU 모습으로 (커플홈 — 메모 등 캐입에서 AU 캐릭터를 고를 때): AU 프로필 합성 + 자관 AU 수정에서 정한 이름 */
+export function charInAu(c: Character, rels: Relation[], auKey?: string | null): Character {
+  if (!auKey) return c;
+  const merged = charWithAu(c, auKey);
+  const [relId, auId] = auKey.split(':');
+  const auName = rels.find(r => r.id === relId)?.aus.find(a => a.id === auId)?.mset?.[c.id]?.name?.trim();
+  return auName ? { ...merged, name: auName } : merged;
+}
+
+/** 고를 수 있는 「캐릭터 + AU」 목록 — 원래 모습 하나와, 그 캐릭터가 멤버인 자관의 AU마다 하나씩 (커플홈 사용자 요청) */
+export function charAuOptions(chars: Character[], rels: Relation[]): { charId: string; auKey?: string; label: string; char: Character }[] {
+  const out: { charId: string; auKey?: string; label: string; char: Character }[] = [];
+  for (const c of chars) {
+    out.push({ charId: c.id, label: c.name, char: c });
+    for (const r of rels) {
+      if (!r.members.some(m => m.charId === c.id)) continue;
+      for (const a of r.aus) {
+        if (a.id === 'base') continue;
+        const key = `${r.id}:${a.id}`;
+        const ch = charInAu(c, rels, key);
+        out.push({ charId: c.id, auKey: key, label: `${ch.name} · ${a.label}`, char: ch });
+      }
+    }
+  }
+  return out;
+}
+
 export function charWithAu(c: Character, auKey?: string | null): Character {
   const p = auKey ? c.auProfiles?.[auKey] : undefined;
   if (!p) return c;

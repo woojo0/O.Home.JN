@@ -18,6 +18,8 @@ export interface StickyMemo {
   secId?: string;
   /** 캐입 메모 (커플홈) — 이 캐릭터로 남긴 메모. author에는 쓸 당시 캐릭터 이름이 들어 있다 */
   charId?: string;
+  /** 그 캐릭터의 AU 모습으로 남긴 메모 (커플홈 사용자 요청) — `relId:auId`. 없으면 원래 모습 */
+  auKey?: string;
 }
 
 export const MEMO_COLORS = ['#f4ecd7', '#dfe7dd', '#e7dfe4', '#dde4ea', '#efe3da'];
