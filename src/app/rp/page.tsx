@@ -426,6 +426,10 @@ export default function RpPage() {
                   const rightSide = ch
                     ? (!!charGrant(ch, user.id) || (!!ch.own && isAdmin))
                     : (!!m.charOwn && isAdmin);
+                  // 메신저 방의 이름 — 말하는 캐릭터가 바뀔 때만 (사용자 확정): 같은 캐릭터가 이어 말하면 생략,
+                  // 상대 글 바로 다음에 내가 일반 RP를 쓰는 식으로 바뀌면 적는다. 기본 방은 늘 적는다
+                  const prevMsg = arr[mi - 1];
+                  const nameNeeded = !imsg || !prevMsg || prevMsg.kind !== 'char' || prevMsg.charId !== m.charId;
                   if (imsg && !m.rp) {
                     /* 아이폰 문자(iMessage) 모양 (커플홈 사용자 요청) — 내 쪽은 파란 말풍선, 상대는 회색.
                        같은 캐릭터가 이어 말하면 묶어서 꼬리·얼굴은 묶음의 마지막에만, 30분 넘게 비면 가운데 시각 */
@@ -442,7 +446,7 @@ export default function RpPage() {
                           style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
                           {!rightSide && <span className="im-face">{last && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
-                            {!rightSide && first && <div className="im-who">{name}</div>}
+                            {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
                             {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
                             <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
                           </div>
@@ -455,8 +459,8 @@ export default function RpPage() {
                     <div key={m.id} className={`msg ${rightSide ? 'me' : ''}`} style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
                       <Face ch={ch} className="face" />
                       <div>
-                        {/* 메신저 방의 일반 RP 글에는 이름을 안 적는다 (사용자 확정) — 얼굴만으로 충분 */}
-                        {!imsg && <div className="who">{name}</div>}
+                        {/* 메신저 방의 일반 RP 글은 말하는 캐릭터가 바뀔 때만 이름 (사용자 확정) */}
+                        {nameNeeded && <div className="who">{name}</div>}
                         <div className="bub">{m.text}</div>
                         {/* 메신저 방에서는 시각을 안 적는다 (사용자 확정) — 일반 RP 글도 마찬가지 */}
                         {!imsg && <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>}
