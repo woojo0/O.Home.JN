@@ -458,14 +458,14 @@ export default function RpPage() {
                           {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
                             {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
-                            {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다.
-                                사진은 말풍선 **안에** 담긴다 (사용자 확정 — 덜렁 떠 있지 않게): 테두리 4px, 글이 있으면 사진 아래에 */}
-                            <div className={`im-bub${m.text.trim().length <= 2 && !m.imgId ? ' short' : ''}${m.imgId ? ' has-pic' : ''}`}>
-                              {m.imgId && (
-                                <div className="im-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>
-                              )}
-                              {m.text && (m.imgId ? <div className="im-txt">{m.text}</div> : m.text)}
-                            </div>
+                            {/* 사진은 아이폰 문자처럼 말풍선 없이 둥근 사진만 (사용자 확정) — 글이 같이 있으면 그 아래 글 말풍선 */}
+                            {m.imgId && (
+                              <div className="im-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>
+                            )}
+                            {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
+                            {(m.text || !m.imgId) && (
+                              <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
+                            )}
                           </div>
                           {acts}
                         </div>
