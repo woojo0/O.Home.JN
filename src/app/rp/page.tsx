@@ -17,6 +17,8 @@ import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 import { RpLogModal } from '@/components/rp/RpLogModal';
+import { Lightbox } from '@/components/ui/Lightbox';
+import { putBlob, BlobImg } from '@/lib/blobStore';
 
 /** 캐릭터 얼굴 칩 (썸네일 or 데모 플레이스홀더) */
 function Face({ ch, className }: { ch?: Character; className: string }) {
@@ -113,24 +115,30 @@ export default function RpPage() {
 
   const [text, setText] = useState('');
   const [plainRp, setPlainRp] = useState(false);   // 메신저 방에서 「일반 RP」로 보내기 (커플홈 사용자 요청) — 원래 역극 모양
-  const send = () => {
+  const [pendingImg, setPendingImg] = useState<{ file: File; url: string } | null>(null);   // 보낼 사진 (메신저 방, 커플홈)
+  const [lbImg, setLbImg] = useState<string | null>(null);   // 사진 크게 보기
+  const send = async () => {
     if (!sel || !user) return;
     let t = text.trim();
-    if (!t) return;
     let kind: RpMessage['kind'] = speaker === 'desc' ? 'desc' : 'char';
     if (t.startsWith('/desc ')) { kind = 'desc'; t = t.slice(6).trim(); } // /desc 명령 (v1.8)
-    if (!t) return;
+    // 사진만 보내는 문자도 된다 (커플홈 — 메신저 방의 사진 메시지). 지문에는 사진이 안 붙는다
+    const img = imsg && kind === 'char' ? pendingImg : null;
+    if (!t && !img) return;
+    const imgId = img ? await putBlob(img.file) : undefined;
     const m: RpMessage = {
       id: newId(), kind, charId: kind === 'char' ? speaker : undefined,
       // 발화 당시 소유 기록 — 캐릭터가 삭제돼도 재연동 시 어느 리스트에서 고를지 판별 (v1.9)
       charOwn: kind === 'char' ? rpChars.find(c => c.id === speaker)?.own : undefined,
       authorId: user.id, text: t, date: new Date().toISOString(),
       ...(imsg && plainRp ? { rp: true } : {}),   // 메신저 방의 「일반 RP」 — 원래 역극 모양으로 (커플홈)
+      ...(imgId ? { imgId } : {}),
     };
     // 방은 건드리지 않는다 — 발화만 자기 행으로 (v2.0)
     setMsgRows([...msgRows, { ...m, roomId: sel.id }]);
     rpMarkRead(sel.id, user.id, m.date);
     setText('');
+    if (img) { URL.revokeObjectURL(img.url); setPendingImg(null); }
     // 알림 (4.13) — 나를 제외한 참여자에게, 방 단위로 묶어서 (디스코드 DM은 봇 연동 시)
     memberIdsOf(sel).filter(id => id !== user.id).forEach(id =>
       pushNotif({
@@ -450,8 +458,14 @@ export default function RpPage() {
                           {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
                             {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
+                            {/* 사진 메시지 (커플홈) — 누르면 크게 */}
+                            {m.imgId && (
+                              <div className="im-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>
+                            )}
                             {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
-                            <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
+                            {(m.text || !m.imgId) && (
+                              <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
+                            )}
                           </div>
                           {acts}
                         </div>
@@ -468,7 +482,10 @@ export default function RpPage() {
                       <div>
                         {/* 메신저 방의 일반 RP 글은 말하는 캐릭터가 바뀔 때만 이름 (사용자 확정) */}
                         {nameNeeded && <div className="who">{name}</div>}
-                        <div className="bub">{m.text}</div>
+                        <div className="bub">
+                          {m.imgId && <div className="rp-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>}
+                          {m.text}
+                        </div>
                         {/* 메신저 방에서는 시각을 안 적는다 (사용자 확정) — 일반 RP 글도 마찬가지 */}
                         {!imsg && <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>}
                       </div>
@@ -503,12 +520,38 @@ export default function RpPage() {
                       </div>
                     )}
                   </div>
-                  {/* 플레이스홀더 없음 (v1.8) · Enter 전송 / Shift+Enter 줄바꿈 · /desc 명령 지원
-                      포커스 중엔 모바일에서 역극 영역만 표시 (v1.9 — blur는 SEND 클릭이 씹히지 않게 지연) */}
-                  <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => setText(e.target.value)}
-                    onFocus={() => setMFocus(true)}
-                    onBlur={() => setTimeout(() => setMFocus(false), 180)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
+                  {/* 사진 보내기 (커플홈 — 메신저 방): 상대에게 사진을 보냈다는 컨셉. 지문에는 안 붙는다 */}
+                  {imsg && speaker !== 'desc' && (
+                    <>
+                      <button type="button" className="im-attach" data-tip="사진 보내기" aria-label="사진 보내기"
+                        onClick={() => document.getElementById('rpImg')?.click()}>＋</button>
+                      <input id="rpImg" type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f && f.type.startsWith('image/')) {
+                            if (pendingImg) URL.revokeObjectURL(pendingImg.url);
+                            setPendingImg({ file: f, url: URL.createObjectURL(f) });
+                          }
+                          e.target.value = '';
+                        }} />
+                    </>
+                  )}
+                  <div className="im-field">
+                    {imsg && pendingImg && (
+                      <div className="im-pv">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={pendingImg.url} alt="" />
+                        <button type="button" className="x" aria-label="사진 빼기"
+                          onClick={() => { URL.revokeObjectURL(pendingImg.url); setPendingImg(null); }}>✕</button>
+                      </div>
+                    )}
+                    {/* 플레이스홀더 없음 (v1.8) · Enter 전송 / Shift+Enter 줄바꿈 · /desc 명령 지원
+                        포커스 중엔 모바일에서 역극 영역만 표시 (v1.9 — blur는 SEND 클릭이 씹히지 않게 지연) */}
+                    <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => setText(e.target.value)}
+                      onFocus={() => setMFocus(true)}
+                      onBlur={() => setTimeout(() => setMFocus(false), 180)}
+                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }} />
+                  </div>
                   {/* 메신저 방에서도 원래 역극 모양으로 보내기 (커플홈 사용자 요청) — 문자 말고 서술·대사를 섞을 때 */}
                   {imsg ? (
                     /* ↑ 버튼 위의 빈자리에 「RP」 토글 (사용자 확정) */
@@ -610,6 +653,8 @@ export default function RpPage() {
       </Modal>
 
       {/* 메시지 수정 (본인) */}
+      {/* 사진 메시지 크게 보기 (커플홈) */}
+      {lbImg && <Lightbox srcs={[lbImg]} index={0} onClose={() => setLbImg(null)} />}
       {/* 역극명 바꾸기 (커플홈 사용자 요청) — 개설자·관리자 */}
       <Modal open={renameText !== null} onClose={() => setRenameText(null)} small title="역극명 바꾸기"
         actions={<>

@@ -71,7 +71,8 @@ export function rpLogText(info: RpLogInfo, msgs: RpMessage[], chars: Character[]
       if (d !== day) { day = d; body.push(`── ${d} ──`); }
     }
     const t = opts.time ? `[${hm(m.date)}] ` : '';
-    body.push(m.kind === 'char' ? `${t}${nameOf(chars, m.charId)}: ${m.text}` : `${t}${m.text}`);
+    const txt = m.text || (m.imgId ? '[사진]' : '');   // 사진만 보낸 문자 (커플홈 메신저 방)
+    body.push(m.kind === 'char' ? `${t}${nameOf(chars, m.charId)}: ${txt}` : `${t}${txt}`);
   }
   return [...head, '', body.join('\n\n'), ''].join('\n');
 }
@@ -96,9 +97,9 @@ export function rpLogHtml(info: RpLogInfo, msgs: RpMessage[], chars: Character[]
     if (m.kind === 'char') {
       const c = chars.find(x => x.id === m.charId);
       const hex = safeHex(c?.color);
-      rows.push(`<div class="m" style="--c:${hex};--rgb:${hexRgb(hex)}"><div class="who">${esc(nameOf(chars, m.charId))}${t}</div><div class="txt">${esc(m.text)}</div></div>`);
+      rows.push(`<div class="m" style="--c:${hex};--rgb:${hexRgb(hex)}"><div class="who">${esc(nameOf(chars, m.charId))}${t}</div><div class="txt">${esc(m.text || (m.imgId ? '[사진]' : ''))}</div></div>`);
     } else {
-      rows.push(`<div class="d">${t}${esc(m.text)}</div>`);
+      rows.push(`<div class="d">${t}${esc(m.text || (m.imgId ? '[사진]' : ''))}</div>`);
     }
   }
   const meta = [rpLogRange(msgs), `대화 ${msgs.length}개`].filter(Boolean).join(' · ');

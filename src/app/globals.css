@@ -533,6 +533,18 @@ a{color:inherit;text-decoration:none}
 .im-plain{width:34px;height:22px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel-solid);color:var(--sub);font-size:10px;font-weight:700;letter-spacing:.04em;display:grid;place-items:center;flex-shrink:0;transition:.15s;font-family:var(--sans-base)}
 .im-plain:hover{border-color:var(--sub)}
 .im-plain.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* 사진 메시지 (커플홈 — 메신저 방): ＋ 버튼 · 보내기 전 미리보기 · 사진 말풍선 */
+.im-attach{width:34px;height:34px;border-radius:50%;background:#e9e9eb;color:#6b6b70;font-size:20px;line-height:1;display:grid;place-items:center;flex-shrink:0;align-self:flex-end;transition:.15s;font-family:var(--sans-base)}
+.im-attach:hover{background:#dcdce0;color:#3a3a3f}
+.im-field{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.im-pv{position:relative;width:96px;height:72px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.im-pv img{width:100%;height:100%;object-fit:cover;display:block}
+.im-pv .x{position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:10px;display:grid;place-items:center}
+.im-pic{max-width:220px;border-radius:18px;overflow:hidden;cursor:zoom-in;margin-bottom:4px;line-height:0}
+.im-pic img{display:block;width:100%;height:auto;max-height:280px;object-fit:cover}
+.im-msg.me .im-pic{margin-left:auto}
+.rp-pic{max-width:240px;border-radius:10px;overflow:hidden;cursor:zoom-in;margin-bottom:6px;line-height:0}
+.rp-pic img{display:block;width:100%;height:auto}
 /* 메신저 방 안의 「일반 RP」 글 — 원래 역극 모양 그대로, 말풍선 묶음과 떨어뜨린다 */
 .rp-msgs.imsg .msg,.rp-msgs.imsg .msg-desc{margin-top:10px;margin-bottom:10px}   /* 좌우 margin은 건드리지 않는다 — .msg.me의 margin-left:auto가 오른쪽 정렬을 맡는다 */
 /* 메신저 방의 일반 RP — 얼굴 칸을 문자 말풍선과 같은 크기·간격(26px + 14px)으로 두어 말풍선 출발선이 맞는다.

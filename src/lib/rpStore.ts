@@ -13,6 +13,8 @@ export interface RpMessage {
   date: string;                     // ISO
   /** 메신저 모양 방에서 「일반 RP」로 보낸 글 (커플홈 사용자 요청) — 말풍선 대신 원래 역극 모양으로 보인다 */
   rp?: boolean;
+  /** 사진 메시지 (커플홈 — 메신저 방에서 상대에게 사진을 보냈다는 컨셉) — 파일 id. 글 없이 사진만도 된다 */
+  imgId?: string;
 }
 
 export interface RpRoom {
