@@ -458,14 +458,14 @@ export default function RpPage() {
                           {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
                             {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
-                            {/* 사진 메시지 (커플홈) — 누르면 크게 */}
-                            {m.imgId && (
-                              <div className="im-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>
-                            )}
-                            {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
-                            {(m.text || !m.imgId) && (
-                              <div className={`im-bub${m.text.trim().length <= 2 ? ' short' : ''}`}>{m.text}</div>
-                            )}
+                            {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다.
+                                사진은 말풍선 **안에** 담긴다 (사용자 확정 — 덜렁 떠 있지 않게): 테두리 4px, 글이 있으면 사진 아래에 */}
+                            <div className={`im-bub${m.text.trim().length <= 2 && !m.imgId ? ' short' : ''}${m.imgId ? ' has-pic' : ''}`}>
+                              {m.imgId && (
+                                <div className="im-pic" onClick={() => setLbImg(m.imgId!)}><BlobImg fileRef={m.imgId} ph="" label="" /></div>
+                              )}
+                              {m.text && (m.imgId ? <div className="im-txt">{m.text}</div> : m.text)}
+                            </div>
                           </div>
                           {acts}
                         </div>
@@ -520,22 +520,6 @@ export default function RpPage() {
                       </div>
                     )}
                   </div>
-                  {/* 사진 보내기 (커플홈 — 메신저 방): 상대에게 사진을 보냈다는 컨셉. 지문에는 안 붙는다 */}
-                  {imsg && speaker !== 'desc' && (
-                    <>
-                      <button type="button" className="im-attach" data-tip="사진 보내기" aria-label="사진 보내기"
-                        onClick={() => document.getElementById('rpImg')?.click()}>＋</button>
-                      <input id="rpImg" type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => {
-                          const f = e.target.files?.[0];
-                          if (f && f.type.startsWith('image/')) {
-                            if (pendingImg) URL.revokeObjectURL(pendingImg.url);
-                            setPendingImg({ file: f, url: URL.createObjectURL(f) });
-                          }
-                          e.target.value = '';
-                        }} />
-                    </>
-                  )}
                   <div className="im-field">
                     {imsg && pendingImg && (
                       <div className="im-pv">
@@ -545,12 +529,41 @@ export default function RpPage() {
                           onClick={() => { URL.revokeObjectURL(pendingImg.url); setPendingImg(null); }}>✕</button>
                       </div>
                     )}
-                    {/* 플레이스홀더 없음 (v1.8) · Enter 전송 / Shift+Enter 줄바꿈 · /desc 명령 지원
-                        포커스 중엔 모바일에서 역극 영역만 표시 (v1.9 — blur는 SEND 클릭이 씹히지 않게 지연) */}
-                    <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => setText(e.target.value)}
-                      onFocus={() => setMFocus(true)}
-                      onBlur={() => setTimeout(() => setMFocus(false), 180)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }} />
+                    <div className="im-line">
+                      {/* 사진 보내기 (커플홈 — 메신저 방): 상대에게 사진을 보냈다는 컨셉. 지문에는 안 붙는다.
+                          입력칸과 같은 줄에 두어 세로 가운데가 입력칸 가운데와 맞는다 (사용자 요청) */}
+                      {imsg && speaker !== 'desc' && (
+                        <>
+                          <button type="button" className="im-attach" data-tip="사진 보내기" aria-label="사진 보내기"
+                            onClick={() => document.getElementById('rpImg')?.click()}>＋</button>
+                          <input id="rpImg" type="file" accept="image/*" style={{ display: 'none' }}
+                            onChange={e => {
+                              const f = e.target.files?.[0];
+                              if (f && f.type.startsWith('image/')) {
+                                if (pendingImg) URL.revokeObjectURL(pendingImg.url);
+                                setPendingImg({ file: f, url: URL.createObjectURL(f) });
+                              }
+                              e.target.value = '';
+                            }} />
+                        </>
+                      )}
+                      {/* 플레이스홀더 없음 (v1.8) · Enter 전송 / Shift+Enter 줄바꿈 · /desc 명령 지원
+                          포커스 중엔 모바일에서 역극 영역만 표시 (v1.9 — blur는 SEND 클릭이 씹히지 않게 지연) */}
+                      <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => setText(e.target.value)}
+                        onFocus={() => setMFocus(true)}
+                        onBlur={() => setTimeout(() => setMFocus(false), 180)}
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
+                        /* Ctrl+V로 붙여 넣은 그림도 사진 메시지로 (사용자 요청) — 메신저 방, 지문이 아닐 때 */
+                        onPaste={e => {
+                          if (!imsg || speaker === 'desc') return;
+                          const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
+                          const f = item?.getAsFile();
+                          if (!f) return;
+                          e.preventDefault();
+                          if (pendingImg) URL.revokeObjectURL(pendingImg.url);
+                          setPendingImg({ file: f, url: URL.createObjectURL(f) });
+                        }} />
+                    </div>
                   </div>
                   {/* 메신저 방에서도 원래 역극 모양으로 보내기 (커플홈 사용자 요청) — 문자 말고 서술·대사를 섞을 때 */}
                   {imsg ? (
