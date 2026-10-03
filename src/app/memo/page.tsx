@@ -238,7 +238,8 @@ function MemoInner() {
   return (
     <section className="page" onClick={() => { setCtx(null); setPageCtx(null); }}>
       <div className="page-head">
-        <PageTitle>{sec.id === MAIN_SEC ? 'STICKY NOTES' : sec.name}</PageTitle>
+        {/* 큰 글씨는 페이지를 나눠도 늘 STICKY NOTES(또는 메뉴 관리에서 메모장에 정한 타이틀) (사용자 확정) — 페이지 이름은 아래 탭에 있다 */}
+        <PageTitle lookupHref="/memo">STICKY NOTES</PageTitle>
         <EditableDesc k="memo-desc" def="드래그 자유 배치 · 색상/기울기 · 작성 권한 옵션" />
       </div>
 
