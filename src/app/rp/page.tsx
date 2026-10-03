@@ -90,7 +90,8 @@ export default function RpPage() {
       // 발화자 목록도 자관에 보이는 순서(왼쪽 먼저)로 — 처음 고른 발화자가 왼쪽 캐릭터가 된다
       const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
       const members = ids.map(id => rpChars.find(c => c.id === id)).filter(Boolean) as Character[];
-      return isAdmin ? members : members.filter(c => !!charGrant(c, user?.id));
+      // 관리자도 자캐만 (사용자 확정 — 상대 캐릭터까지 목록에 뜨는 게 싫다). 상대 오너는 권한 받은 캐릭터만
+      return isAdmin ? members.filter(c => c.own) : members.filter(c => !!charGrant(c, user?.id));
     }
     return isAdmin ? rpChars.filter(c => c.own) : rpChars.filter(c => !!charGrant(c, user?.id));
   }, [rel, rpChars, isAdmin, user?.id]);
