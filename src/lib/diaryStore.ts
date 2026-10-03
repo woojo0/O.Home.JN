@@ -54,7 +54,8 @@ export const diaryOrder = (a: DiaryPost, b: DiaryPost) =>
 export const DIARY_PER_PAGE = 5;
 
 /* ---------- 구분 탭 (커플홈 사용자 요청 — 무드 말고도 일기를 나눠 보는 탭, 환경설정에서 관리) ---------- */
-export interface DiaryCat { id: string; name: string }
+/** 구분 탭. auKey(`relId:auId`)를 정하면 그 탭에서는 칸 머리의 캐릭터가 그 AU 모습으로 보인다 (커플홈 사용자 요청) */
+export interface DiaryCat { id: string; name: string; auKey?: string }
 export interface DiarySettings {
   cats: DiaryCat[];
   /** 다이어리(섹션)마다 칸을 나눌 자관 — 섹션 id → 자관 id (커플홈 사용자 요청: 자관이 여럿일 때).

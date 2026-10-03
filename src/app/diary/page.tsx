@@ -14,7 +14,7 @@ import {
   DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings, diaryOrder,
 } from '@/lib/diaryStore';
 import {
-  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath,
+  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath, charInAu,
 } from '@/lib/charStore';
 import { useFonts } from '@/lib/fontStore';
 import { renderBody } from '@/lib/sanitize';
@@ -213,7 +213,11 @@ function DiaryPageInner() {
     const total = Math.max(1, Math.ceil(list.length / DIARY_PER_PAGE));
     const cur = Math.min(pages[side], total);
     const shown = list.slice((cur - 1) * DIARY_PER_PAGE, cur * DIARY_PER_PAGE);
-    const ch = charOf(cid);
+    // 구분 탭에 AU를 연결해 뒀으면(환경설정) 그 탭에서는 칸 머리의 캐릭터를 그 AU 모습으로 (커플홈 사용자 요청).
+    // 다른 자관의 AU면 무시한다 — 이 다이어리의 자관에 속한 AU만
+    const catAu = dset.cats.find(c => c.id === effCat)?.auKey;
+    const baseCh = charOf(cid);
+    const ch = baseCh && catAu && rel && catAu.startsWith(`${rel.id}:`) ? charInAu(baseCh, rels, catAu) : baseCh;
     return (
       <div className="dy-col" key={side}>
         {side !== 'one' && (

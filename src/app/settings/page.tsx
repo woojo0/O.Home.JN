@@ -1404,7 +1404,7 @@ function DiaryCatPane() {
 
       <hr style={{ margin: '24px 0', border: 'none', borderTop: '1.5px solid var(--line)' }} />
       <h3>구분 탭</h3>
-      <div className="d">다이어리 위쪽에 탭으로 나오는 구분 — 일기를 쓸 때 고릅니다 · ⠿ 드래그로 순서</div>
+      <div className="d">다이어리 위쪽에 탭으로 나오는 구분 — 일기를 쓸 때 고릅니다 · ⠿ 드래그로 순서 · AU를 연결하면 그 탭에서는 캐릭터가 그 AU 모습으로 보입니다</div>
       <DragList items={dset.cats} keyOf={c => c.id} onReorder={setCats}
         render={c => (
           <div className="set-row" style={{ width: '100%' }}>
@@ -1414,6 +1414,13 @@ function DiaryCatPane() {
                 style={{ width: 160 }} />
             </div>
             <div className="cp-group" style={{ justifyContent: 'flex-end' }}>
+              {/* 연결할 AU (커플홈 사용자 요청) — 이 구분 탭에서는 칸 머리의 캐릭터가 그 AU 모습(이름·사진·색)으로 보인다 */}
+              <KSelect minWidth={170} maxWidth={240} value={c.auKey ?? ''}
+                onChange={v => setCats(dset.cats.map(x => (x.id === c.id ? { ...x, auKey: v || undefined } : x)))}
+                options={[
+                  { value: '', label: 'AU 없음 — 원래 설정' },
+                  ...rels.flatMap(r => r.aus.filter(a => a.id !== 'base').map(a => ({ value: `${r.id}:${a.id}`, label: `${r.name} · ${a.label}` }))),
+                ]} />
               <small style={{ color: 'var(--faint)', fontSize: 10.5 }}>일기 {diaries.filter(d => d.catId === c.id).length}개</small>
               <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
                 onClick={() => {
