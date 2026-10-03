@@ -26,6 +26,8 @@ export interface RpRoom {
   createdBy: string;
   created: string;
   lastRead: Record<string, string>; // 회원별 마지막 확인 시각 — N 뱃지
+  /** 표시 방식 (커플홈 사용자 요청) — 'imsg'면 아이폰 문자(iMessage) 모양. 없으면 기본(대본형) */
+  style?: 'script' | 'imsg';
   messages: RpMessage[];
 }
 

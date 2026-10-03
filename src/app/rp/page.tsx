@@ -163,6 +163,7 @@ export default function RpPage() {
   // 방 개설 모달
   const [newOpen, setNewOpen] = useState(false);
   const [nTitle, setNTitle] = useState('');
+  const [nStyle, setNStyle] = useState<'script' | 'imsg'>('script');   // 표시 방식 — 기본 / 메신저(아이폰 문자)
   const [nRel, setNRel] = useState('none');
   const [nAu, setNAu] = useState('base');   // 고른 자관의 AU (v2.0 사용자 요청)
   const [nMembers, setNMembers] = useState<string[]>([]);
@@ -187,14 +188,16 @@ export default function RpPage() {
       auId: nRel !== 'none' && nAu !== 'base' ? nAu : undefined,
       memberIds: members, status: 'ongoing', isPublic: false,
       createdBy: user.id, created: new Date().toISOString(), lastRead: {}, messages: [],
+      ...(nStyle === 'imsg' ? { style: 'imsg' as const } : {}),   // 메신저 모양 (커플홈) — 기본이면 남기지 않는다
     };
     setRooms([room, ...rooms]);
     setSelId(room.id);
     setNewOpen(false);
-    setNTitle(''); setNRel('none'); setNMembers([]);
+    setNTitle(''); setNRel('none'); setNMembers([]); setNStyle('script');
   };
 
   const canManage = sel && user && (sel.createdBy === user.id || isAdmin);
+  const imsg = sel?.style === 'imsg';   // 메신저(아이폰 문자) 모양 (커플홈 사용자 요청)
   const [endAsk, setEndAsk] = useState(false); // 완결 확인 — 삭제가 아니므로 전용 모달
 
   // 연결이 해제된(삭제된) 캐릭터 — 발화가 남아 있으면 다른 캐릭터로 재연동 (v1.9)
@@ -348,6 +351,14 @@ export default function RpPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <span className="pill">{sel.status === 'done' ? (sel.isPublic ? '완결 · 공개' : '완결') : '진행중'}</span>
+                  {/* 표시 방식 전환 (커플홈 사용자 요청) — 대본형 ↔ 아이폰 문자 모양. 방 설정이라 개설자·관리자가 바꾼다 */}
+                  {canManage && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      data-tip={imsg ? '대본형으로 보기' : '아이폰 문자 모양으로 보기'}
+                      onClick={() => patchRoom({ style: imsg ? 'script' : 'imsg' })}>
+                      {imsg ? '기본' : '메신저'}
+                    </button>
+                  )}
                   {/* 삭제된 캐릭터가 남아 있으면 재연동 (v1.9) */}
                   {canManage && brokenChars.length > 0 && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5, color: 'var(--accent)' }}
@@ -381,21 +392,18 @@ export default function RpPage() {
                 </div>
               </div>
 
-              <div className="rp-msgs" ref={msgsRef}>
-                {msgsOf(sel).map(m => {
+              <div className={`rp-msgs${imsg ? ' imsg' : ''}`} ref={msgsRef}>
+                {msgsOf(sel).map((m, mi, arr) => {
                   const mine = m.authorId === user.id;
+                  const acts = mine && (
+                    <span className="m-act">
+                      <button onClick={() => { setEditMsg(m); setEditText(m.text); }}>EDIT</button>
+                      <button onClick={() => removeMsg(m)}>DEL</button>
+                    </span>
+                  );
                   if (m.kind === 'desc') {
-                    return (
-                      <div key={m.id} className="msg-desc">
-                        {m.text}
-                        {mine && (
-                          <span className="m-act">
-                            <button onClick={() => { setEditMsg(m); setEditText(m.text); }}>EDIT</button>
-                            <button onClick={() => removeMsg(m)}>DEL</button>
-                          </span>
-                        )}
-                      </div>
-                    );
+                    // 메신저 모양에서는 지문이 아이폰 문자의 가운데 안내 글씨처럼
+                    return <div key={m.id} className={imsg ? 'im-sys' : 'msg-desc'}>{m.text}{acts}</div>;
                   }
                   const ch = rpChars.find(c => c.id === m.charId);
                   const name = ch?.name ?? '';
@@ -406,6 +414,29 @@ export default function RpPage() {
                   const rightSide = ch
                     ? (!!charGrant(ch, user.id) || (!!ch.own && isAdmin))
                     : (!!m.charOwn && isAdmin);
+                  if (imsg) {
+                    /* 아이폰 문자(iMessage) 모양 (커플홈 사용자 요청) — 내 쪽은 파란 말풍선, 상대는 회색.
+                       같은 캐릭터가 이어 말하면 묶어서 꼬리·얼굴은 묶음의 마지막에만, 30분 넘게 비면 가운데 시각 */
+                    const GAP = 30 * 60 * 1000;
+                    const prev = arr[mi - 1], next = arr[mi + 1];
+                    const gap = !prev || Date.parse(m.date) - Date.parse(prev.date) > GAP;
+                    const first = gap || prev.kind !== 'char' || prev.charId !== m.charId;
+                    const last = !next || next.kind !== 'char' || next.charId !== m.charId || Date.parse(next.date) - Date.parse(m.date) > GAP;
+                    return (
+                      <React.Fragment key={m.id}>
+                        {gap && <div className="im-time">{fmtHM(m.date)}</div>}
+                        <div className={`im-msg ${rightSide ? 'me' : 'them'}${first ? ' first' : ''}${last ? ' last' : ''}`}
+                          style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
+                          {!rightSide && <span className="im-face">{last && <Face ch={ch} className="f" />}</span>}
+                          <div className="im-col">
+                            {!rightSide && first && <div className="im-who">{name}</div>}
+                            <div className="im-bub">{m.text}</div>
+                          </div>
+                          {acts}
+                        </div>
+                      </React.Fragment>
+                    );
+                  }
                   return (
                     <div key={m.id} className={`msg ${rightSide ? 'me' : ''}`} style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
                       <Face ch={ch} className="face" />
@@ -414,12 +445,7 @@ export default function RpPage() {
                         <div className="bub">{m.text}</div>
                         <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>
                       </div>
-                      {mine && (
-                        <span className="m-act">
-                          <button onClick={() => { setEditMsg(m); setEditText(m.text); }}>EDIT</button>
-                          <button onClick={() => removeMsg(m)}>DEL</button>
-                        </span>
-                      )}
+                      {acts}
                     </div>
                   );
                 })}
@@ -429,7 +455,7 @@ export default function RpPage() {
               </div>
 
               {sel.status === 'ongoing' && (
-                <div className="rp-input">
+                <div className={`rp-input${imsg ? ' imsg' : ''}`}>
                   {/* 발화자 선택 — 캐릭터 / 지문 (v2.0 사용자 확정: 역극에는 이 둘만 있으면 된다) */}
                   <div className="char-pick" onClick={() => setPickOpen(o => !o)}>
                     {speaker === 'desc'
@@ -456,7 +482,7 @@ export default function RpPage() {
                     onFocus={() => setMFocus(true)}
                     onBlur={() => setTimeout(() => setMFocus(false), 180)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
-                  <button className="btn btn-dark" onClick={send}>SEND</button>
+                  <button className={imsg ? 'im-send' : 'btn btn-dark'} onClick={send} aria-label="SEND">{imsg ? '↑' : 'SEND'}</button>
                 </div>
               )}
             </>
@@ -510,6 +536,14 @@ export default function RpPage() {
                   options={[{ value: 'base', label: '원래 설정' },
                     ...newRelAus.map(a => ({ value: a.id, label: a.label || 'AU' }))]} />
               )}
+            </div>
+          </div>
+          {/* 표시 방식 (커플홈 사용자 요청) — 대본형 / 아이폰 문자(iMessage) 모양. 방 안에서도 바꿀 수 있다 */}
+          <div>
+            <label className="k-label" style={{ marginBottom: 5 }}>표시 방식</label>
+            <div className="mini-seg">
+              <button className={nStyle === 'script' ? 'on' : ''} onClick={() => setNStyle('script')}>기본</button>
+              <button className={nStyle === 'imsg' ? 'on' : ''} onClick={() => setNStyle('imsg')}>메신저 (아이폰 문자)</button>
             </div>
           </div>
           <div>
