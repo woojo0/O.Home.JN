@@ -19,6 +19,8 @@ export interface ThreadPost {
   fold?: { type: 'spoiler' | 'adult' | 'custom'; label?: string } | null;
   /** 캐입 글 (커플홈) — 이 캐릭터로 쓴 글. 따로 저장된 글이면 author에 쓸 당시 캐릭터 이름이 있다 */
   charId?: string;
+  /** 그 캐릭터의 AU 모습으로 쓴 글 (커플홈 사용자 요청) — `relId:auId`. 없으면 원래 모습 */
+  auKey?: string;
 }
 
 export interface ThreadWork {

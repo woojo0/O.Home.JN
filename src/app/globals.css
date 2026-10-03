@@ -50,6 +50,11 @@ html,#appMain{scrollbar-color:var(--sb-thumb) transparent;scrollbar-width:thin}
 body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 .topbar{flex-shrink:0}
 #appMain{flex:1;overflow-y:auto;overflow-x:hidden;position:relative;scrollbar-gutter:stable} /* 스크롤바 유무로 콘텐츠가 좌우로 밀리지 않게 */
+/* 모바일 배치(≤1080px)에선 페이지 전체 스크롤바도 숨긴다 (커플홈 사용자 요청 — 손가락으로 넘기니 보일 필요가 없다). 스크롤은 그대로 */
+@media (max-width:1080px){
+  html,#appMain{scrollbar-width:none;scrollbar-gutter:auto}
+  html::-webkit-scrollbar,body::-webkit-scrollbar,#appMain::-webkit-scrollbar{display:none;width:0;height:0}
+}
 body{
   font-family:var(--sans);color:var(--ink);letter-spacing:-.01em;
   font-weight:var(--fw-body,400);
@@ -1897,7 +1902,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
      히어로를 줄바꿈 플렉스로 두고 다른 줄은 가로 전체, 한마디 둘만 맨 뒤(order)에서 반씩 나눠 한 줄에 */
   .rel-hero{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start}
   .rel-hero > *{flex:0 0 100%}
-  .rel-hero .quote{position:static;display:block;flex:1 1 0;min-width:0;order:10;margin-top:10px;padding:0 6px;overflow-wrap:anywhere}
+  /* 두 줄로 (사용자 확정): 왼쪽 캐릭터 한마디는 왼쪽 정렬 한 줄, 오른쪽 캐릭터 한마디는 오른쪽 정렬 한 줄 */
+  .rel-hero .quote{position:static;display:block;flex:0 0 100%;min-width:0;margin-top:8px;padding:0 6px;overflow-wrap:anywhere}
+  .rel-hero .quote.l{order:10;text-align:left}
+  .rel-hero .quote.r{order:11;text-align:right;margin-top:4px}
   .qa-wrap{grid-template-columns:1fr;height:auto}
   .qa-list{border-left:none;padding-left:0;max-height:300px}
 }

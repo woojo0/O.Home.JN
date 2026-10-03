@@ -9,7 +9,7 @@ import {
   RpRoom, RpMessage, RP_SEED, hexRgb, rpLastDate, rpHasNew,
   RpMessageRow, RP_MSG_KEY, RP_MSG_SEED, messagesFor, rpMarkRead, rpMemberIds,
 } from '@/lib/rpStore';
-import { Character, CHAR_SEED, Relation, REL_SEED, charGrant, charWithAu } from '@/lib/charStore';
+import { Character, CHAR_SEED, Relation, REL_SEED, charGrant, charWithAu, pairSides } from '@/lib/charStore';
 import { phStyle } from '@/lib/color';
 import { Modal, ConfirmModal, useConfirmDelete } from '@/components/ui/Modal';
 import { KInput, KTextarea, KSelect, KCheck } from '@/components/ui/Kit';
@@ -87,7 +87,9 @@ export default function RpPage() {
   );
   const speakChars = useMemo(() => {
     if (rel) {
-      const members = rel.members.map(m => rpChars.find(c => c.id === m.charId)).filter(Boolean) as Character[];
+      // 발화자 목록도 자관에 보이는 순서(왼쪽 먼저)로 — 처음 고른 발화자가 왼쪽 캐릭터가 된다
+      const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
+      const members = ids.map(id => rpChars.find(c => c.id === id)).filter(Boolean) as Character[];
       return isAdmin ? members : members.filter(c => !!charGrant(c, user?.id));
     }
     return isAdmin ? rpChars.filter(c => c.own) : rpChars.filter(c => !!charGrant(c, user?.id));
@@ -295,8 +297,10 @@ export default function RpPage() {
   const relCharNames = (relId?: string) => {
     const rel = rels.find(r => r.id === relId);
     if (!rel) return [];
-    return rel.members
-      .map(m => rpChars.find(c => c.id === m.charId)?.name)
+    // 자관 페이지에 보이는 순서대로 — 왼쪽 캐릭터 먼저 (사용자 제보: 내 캐릭터가 먼저 떴다). pairSides가 좌우 바꾸기까지 반영한다
+    const ids = pairSides(rel) ?? rel.members.map(m => m.charId);
+    return ids
+      .map(id => rpChars.find(c => c.id === id)?.name)
       .filter(Boolean) as string[];
   };
   /** 방 소제목 (v2.0 사용자 확정) — 페어면 캐릭터 이름 둘만, 다인관이면 자관명만.

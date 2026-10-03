@@ -14,7 +14,7 @@ import {
   ThreadWork, ThreadPost, THREAD_SEED, useThreadSettings, threadCats, catLabel, threadBadgeStyle, lastDate, fmtMD, fmtMDHM,
   THR_POST_KEY, THR_POST_SEED, ThreadPostRow, MergedPost, postsOf, canWriteThreads, threadPartnerIds,
 } from '@/lib/threadStore';
-import { Character, CHAR_SEED, inCharChoices } from '@/lib/charStore';
+import { Character, CHAR_SEED, inCharChoices, Relation, REL_SEED, charInAu, charAuOptions } from '@/lib/charStore';
 import { useMembers, type MemberLite } from '@/lib/members';
 import { useFonts } from '@/lib/fontStore';
 import { putBlob, BlobImg, useBlobUrl } from '@/lib/blobStore';
@@ -88,15 +88,17 @@ function CharTag({ ch, className }: { ch: Character; className: string }) {
 
 /** 댓글 이름 (커플홈) — 캐입 댓글이면 캐릭터, 아니면 쓴 사람 이름.
  *  캐릭터가 지워졌으면 쓸 당시 이름(author)으로 */
-function CmtWho({ c, chars }: { c: Comment; chars: Character[] }) {
-  const ch = c.charId ? chars.find(x => x.id === c.charId) : undefined;
+function CmtWho({ c, chars, rels }: { c: Comment; chars: Character[]; rels: Relation[] }) {
+  const base = c.charId ? chars.find(x => x.id === c.charId) : undefined;
+  const ch = base ? charInAu(base, rels, c.auKey) : undefined;   // AU 캐릭터로 쓴 댓글은 그 AU 모습으로 (커플홈)
   return ch ? <CharTag ch={ch} className="cmt-char" /> : <b>{c.author}</b>;
 }
 
 /** 글쓴이 (커플홈) — 캐입 글이면 캐릭터, 아니면 지금 닉네임(못 찾으면 쓸 당시 이름).
  *  캐릭터가 지워졌으면 쓸 당시 이름으로. 옛 글(관리자 혼자 쓰던 때)은 표시 없음 */
-function PostWho({ p, chars, pool }: { p: MergedPost; chars: Character[]; pool: MemberLite[] }) {
-  const ch = p.charId ? chars.find(x => x.id === p.charId) : undefined;
+function PostWho({ p, chars, rels, pool }: { p: MergedPost; chars: Character[]; rels: Relation[]; pool: MemberLite[] }) {
+  const base = p.charId ? chars.find(x => x.id === p.charId) : undefined;
+  const ch = base ? charInAu(base, rels, p.auKey) : undefined;   // AU 캐릭터로 쓴 글은 그 AU 모습으로 (커플홈)
   if (ch) return <CharTag ch={ch} className="who" />;
   const name = p.charId ? p.author
     : p.authorId ? pool.find(m => m.id === p.authorId)?.nickname ?? p.author : undefined;
@@ -134,6 +136,7 @@ function ThreadsPageInner() {
   /* 두 사람이 같이 쓰는 타래 (커플홈) — 관리자 + 캐릭터 권한을 받은 회원(상대 오너).
      글은 타래 안이 아니라 따로 저장한다(ThreadPostRow) — 상대가 관리자 타래에 이어 쓸 수 있게 */
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
+  const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);   // AU 캐릭터로 쓰기 (커플홈) — 자관의 AU 목록
   const [postRows, setPostRows] = useLocalList<ThreadPostRow>(THR_POST_KEY, THR_POST_SEED);
   const pool = useMembers();
   const canWrite = canWriteThreads(chars, { isAdmin, id: user?.id });
@@ -145,11 +148,14 @@ function ThreadsPageInner() {
   /* 캐입 (커플홈) — 타래 글·댓글 모두 캐릭터로 쓸 수 있다. 관리자는 자캐로, 상대 오너는 권한 받은 캐릭터로.
      권한(수정·삭제)은 그대로 쓴 회원 기준이고, 화면에는 캐릭터만 보인다 (역극처럼 오너 계정은 드러내지 않는다) */
   const charChoices = user ? inCharChoices(chars, { isAdmin, id: user.id }) : [];
+  // AU 캐릭터로도 쓴다 (커플홈 사용자 요청) — 원래 모습 + 자관 AU마다 하나씩. 고른 값은 `charId` 또는 `charId|relId:auId`
+  const asList = charAuOptions(charChoices, rels);
+  const optKey = (o: { charId: string; auKey?: string }) => (o.auKey ? `${o.charId}|${o.auKey}` : o.charId);
   const asOptions = user ? [
     { value: 'me', label: `나 (${user.nickname})` as React.ReactNode },
-    ...charChoices.map(c => ({
-      value: c.id,
-      label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: c.color }} />{c.name}</span> as React.ReactNode,
+    ...asList.map(o => ({
+      value: optKey(o),
+      label: <span className="dot-lbl"><i className="cmt-dot" style={{ background: o.char.color }} />{o.label}</span> as React.ReactNode,
     })),
   ] : [];
 
@@ -185,7 +191,7 @@ function ThreadsPageInner() {
 
   // 이어쓰기 컴포저 — 누구로 쓸지(본인/캐릭터)는 댓글과 따로 고른다 (커플홈)
   const [postAs, setPostAs] = useState('me');
-  const postChar = charChoices.find(c => c.id === postAs);   // 고른 캐릭터가 사라졌으면 본인으로
+  const postPick = asList.find(o => optKey(o) === postAs);   // 고른 캐릭터(AU)가 사라졌으면 본인으로
   const [text, setText] = useState('');
   const [foldType, setFoldType] = useState<FoldPick>('none');       // 접기 (v2.0 스포일러 쿠션)
   const [foldLabel, setFoldLabel] = useState('');
@@ -215,8 +221,8 @@ function ThreadsPageInner() {
     };
     // 타래는 건드리지 않는다 — 글만 자기 행으로, 뒤에 붙인다 (커플홈)
     const row: ThreadPostRow = {
-      ...p, workId: sel.id, authorId: user.id, author: postChar?.name ?? user.nickname,
-      ...(postChar ? { charId: postChar.id } : {}),
+      ...p, workId: sel.id, authorId: user.id, author: postPick?.char.name ?? user.nickname,
+      ...(postPick ? { charId: postPick.charId, ...(postPick.auKey ? { auKey: postPick.auKey } : {}) } : {}),
       visibility: sel.visibility, ...(sel.secId ? { secId: sel.secId } : {}),
     };
     setPostRows([...postRows, row]);
@@ -246,10 +252,10 @@ function ThreadsPageInner() {
   const [epAs, setEpAs] = useState('me');
   const epRow = postRows.find(r => r.id === epId);
   const epMine = !!user && !!epRow && epRow.authorId === user.id;
-  const epChar = charChoices.find(c => c.id === epAs);
+  const epPick = asList.find(o => optKey(o) === epAs);
   const openEdit = (p: ThreadPost) => {
     setEpId(p.id); setEpText(p.text);
-    setEpAs(p.charId ?? 'me');
+    setEpAs(p.charId ? (p.auKey ? `${p.charId}|${p.auKey}` : p.charId) : 'me');
     setEpFoldType(p.fold?.type ?? 'none'); setEpFoldLabel(p.fold?.label ?? '');
     setEpKeep(p.images); setEpPh(p.images.length ? [] : (p.phList ?? []));
     setEpFiles([]); setEpUrls([]);
@@ -275,7 +281,7 @@ function ThreadsPageInner() {
     // 따로 저장된 글이면 그 행만, 옛 글이면 타래 안에서 (커플홈)
     if (epRow) {
       const who = epMine
-        ? { charId: epChar?.id, author: epChar?.name ?? user!.nickname }   // 본인 ↔ 캐릭터 전환
+        ? { charId: epPick?.charId, auKey: epPick?.auKey, author: epPick?.char.name ?? user!.nickname }   // 본인 ↔ 캐릭터(AU) 전환
         : {};
       setPostRows(postRows.map(r => (r.id === epId ? { ...r, ...patch, ...who } : r)));
     } else {
@@ -319,7 +325,7 @@ function ThreadsPageInner() {
   const guestMode = !user;                       // 손님 작성 허용 (방명록·로드비 기본과 동일)
   // 캐입 댓글 (커플홈) — 선택지는 타래 글과 같고, 고른 값은 따로
   const [asChar, setAsChar] = useState('me');
-  const speakAs = charChoices.find(c => c.id === asChar);   // 고른 캐릭터가 사라졌으면 본인으로
+  const speakPick = asList.find(o => optKey(o) === asChar);   // 고른 캐릭터(AU)가 사라졌으면 본인으로
   const comments = sel ? commentsFor(cmtRows, 'thread', sel.id) : [];
   const addComment = () => {
     if (!sel || !cmt.trim()) return;
@@ -328,7 +334,8 @@ function ThreadsPageInner() {
     const c: CommentRow = user
       ? {
           ...base, target: 'thread' as const, targetId: sel.id, authorId: user.id,
-          author: speakAs?.name ?? user.nickname, ...(speakAs ? { charId: speakAs.id } : {}),
+          author: speakPick?.char.name ?? user.nickname,
+          ...(speakPick ? { charId: speakPick.charId, ...(speakPick.auKey ? { auKey: speakPick.auKey } : {}) } : {}),
         }
       : { ...base, target: 'thread' as const, targetId: sel.id, author: gName.trim(), authorId: '' };
     setCmtRows([...cmtRows, c]);
@@ -479,7 +486,7 @@ function ThreadsPageInner() {
                           </>
                         )}
                         {/* 글쓴이 — 두 사람이 같이 쓰므로 (커플홈). 옛 글은 표시 없음 */}
-                        <div className="tm"><PostWho p={p} chars={chars} pool={pool} />{fmtMDHM(p.date)}</div>
+                        <div className="tm"><PostWho p={p} chars={chars} rels={rels} pool={pool} />{fmtMDHM(p.date)}</div>
                         {canEditPost(p) && (
                           <div className="hv-actions">
                             <button onClick={() => openEdit(p)}>EDIT</button>
@@ -525,7 +532,7 @@ function ThreadsPageInner() {
                       <div className="wpost">
                         {/* 누구로 쓸지 (커플홈 캐입) — 캐릭터가 있을 때만 */}
                         {charChoices.length > 0 && (
-                          <KSelect minWidth={120} maxWidth={170} value={postChar ? postChar.id : 'me'} onChange={setPostAs}
+                          <KSelect minWidth={120} maxWidth={170} value={postPick ? optKey(postPick) : 'me'} onChange={setPostAs}
                             options={asOptions} />
                         )}
                         <button className="btn btn-dark" style={{ padding: '8px 20px', fontSize: 12, borderRadius: 20 }}
@@ -542,7 +549,7 @@ function ThreadsPageInner() {
                     <React.Fragment key={c.id}>
                       {[c, ...cmtChildren(c.id)].map((x, i) => (
                         <div key={x.id} className={`cmt ${i > 0 ? 'reply-depth' : ''}`}>
-                          <CmtWho c={x} chars={chars} /><small>{fmtDate(x.date)}</small>
+                          <CmtWho c={x} chars={chars} rels={rels} /><small>{fmtDate(x.date)}</small>
                           {i === 0 && (
                             <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8 }}
                               onClick={() => setReplyTo(replyTo === x.id ? null : x.id)}>
@@ -565,7 +572,7 @@ function ThreadsPageInner() {
                   {guestMode && <GuestIdBar name={gName} onName={setGName} />}
                   <div className="ci-row" style={guestMode ? undefined : { display: 'contents' }}>
                     {charChoices.length > 0 && user && (
-                      <KSelect minWidth={120} maxWidth={160} value={speakAs ? speakAs.id : 'me'} onChange={setAsChar}
+                      <KSelect minWidth={120} maxWidth={160} value={speakPick ? optKey(speakPick) : 'me'} onChange={setAsChar}
                         options={asOptions} />
                     )}
                     <KInput placeholder={replyTo ? '답글 작성...' : '댓글 남기기...'} value={cmt}
@@ -606,7 +613,7 @@ function ThreadsPageInner() {
           {epMine && charChoices.length > 0 && (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="cp-lb">쓴 사람</span>
-              <KSelect minWidth={140} maxWidth={200} value={epChar ? epChar.id : 'me'} onChange={setEpAs} options={asOptions} />
+              <KSelect minWidth={140} maxWidth={200} value={epPick ? optKey(epPick) : 'me'} onChange={setEpAs} options={asOptions} />
             </div>
           )}
           <KTextarea style={{ minHeight: 120 }} value={epText} onChange={e => setEpText(e.target.value)} />
