@@ -1106,9 +1106,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .mini-prof .hd > div{min-width:0}
 .mini-prof .hd b{font-family:var(--serif-base);font-size:calc(17px*var(--fs,1));letter-spacing:.16em;display:block}
 .mini-prof .hd small{display:block;margin-top:5px;font-size:calc(9.5px*var(--fs,1));color:var(--faint);letter-spacing:.1em}
-.mini-prof .specs{padding:11px 16px;font-size:calc(11.5px*var(--fs,1));color:var(--sub)}
-.mini-prof .specs div{display:flex;gap:8px;padding:2.5px 0}
-.mini-prof .specs b{color:var(--faint);font-weight:600;min-width:34px}
+/* 스펙 줄 — 이름표 칸은 제일 긴 이름표 폭(최소 34px)으로 모든 줄이 같이 맞춰진다 (커플홈 사용자 제보) */
+.mini-prof .specs{padding:11px 16px;font-size:calc(11.5px*var(--fs,1));color:var(--sub);display:grid;grid-template-columns:minmax(34px,max-content) 1fr;column-gap:8px;row-gap:5px;align-items:baseline}
+.mini-prof .specs div{display:contents}
+.mini-prof .specs b{color:var(--faint);font-weight:600;white-space:nowrap}
+.mini-prof .specs span{min-width:0;overflow-wrap:anywhere}
 .mini-prof .foot{padding:9px 15px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;font-size:calc(9.5px*var(--fs,1));color:var(--faint)}
 .palette-row{display:flex;gap:6px;padding:0 15px 11px}
 .palette-row .gem{display:inline-block;width:14px;height:14px;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);cursor:help;position:relative}

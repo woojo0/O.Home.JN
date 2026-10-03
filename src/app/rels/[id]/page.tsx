@@ -165,7 +165,8 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         </div>
       </div>
       <div className="specs">
-        {char.specs.map(s => <div key={s.label}><b>{s.label}</b> {s.value}</div>)}
+        {/* 이름표 칸은 제일 긴 이름표 기준으로 맞춘다 (커플홈 사용자 제보 — 「생년월일」 넉 자가 혼자 튀어나왔다) */}
+        {char.specs.map(s => <div key={s.label}><b>{s.label}</b><span>{s.value}</span></div>)}
       </div>
       {/* 캐릭터의 지금 색 팔레트를 그대로 읽는다 (v2.0 사용자 발견).
           예전엔 멤버를 추가할 때 복사해 둔 member.palette 스냅샷을 보여 줘서, 캐릭터 쪽에서 색을
