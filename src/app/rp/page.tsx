@@ -430,6 +430,9 @@ export default function RpPage() {
                   // 상대 글 바로 다음에 내가 일반 RP를 쓰는 식으로 바뀌면 적는다. 기본 방은 늘 적는다
                   const prevMsg = arr[mi - 1];
                   const nameNeeded = !imsg || !prevMsg || prevMsg.kind !== 'char' || prevMsg.charId !== m.charId;
+                  // 얼굴은 같은 캐릭터가 이어 말한 묶음의 **맨 끝**에 하나만 (아이폰 문자처럼) — 문자·일반 RP가 섞여도 한 번
+                  const nextMsg = arr[mi + 1];
+                  const runEnd = !nextMsg || nextMsg.kind !== 'char' || nextMsg.charId !== m.charId;
                   if (imsg && !m.rp) {
                     /* 아이폰 문자(iMessage) 모양 (커플홈 사용자 요청) — 내 쪽은 파란 말풍선, 상대는 회색.
                        같은 캐릭터가 이어 말하면 묶어서 꼬리·얼굴은 묶음의 마지막에만, 30분 넘게 비면 가운데 시각 */
@@ -444,7 +447,7 @@ export default function RpPage() {
                         {/* 시각 줄은 두지 않는다 (사용자 확정 — 만들어진 역극이라 실제 시간은 의미가 없다). 묶음만 가른다 */}
                         <div className={`im-msg ${rightSide ? 'me' : 'them'}${first ? ' first' : ''}${last ? ' last' : ''}`}
                           style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
-                          {!rightSide && <span className="im-face">{last && <Face ch={ch} className="f" />}</span>}
+                          {!rightSide && <span className="im-face">{runEnd && <Face ch={ch} className="f" />}</span>}
                           <div className="im-col">
                             {!rightSide && nameNeeded && <div className="im-who">{name}</div>}
                             {/* 한두 글자짜리는 말풍선이 찌그러져 보여 최소 폭을 둔다 */}
@@ -457,7 +460,11 @@ export default function RpPage() {
                   }
                   return (
                     <div key={m.id} className={`msg ${rightSide ? 'me' : ''}`} style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
-                      <Face ch={ch} className="face" />
+                      {/* 메신저 방의 일반 RP: 내 글은 얼굴 없이(내 말풍선처럼 오른쪽 끝 맞춤), 상대 글은 묶음 끝에만 얼굴 —
+                          이어지는 글은 빈자리만 두어 말풍선 출발선이 문자 말풍선과 같게 (사용자 확정) */}
+                      {!imsg
+                        ? <Face ch={ch} className="face" />
+                        : !rightSide && (runEnd ? <Face ch={ch} className="face" /> : <span className="face spacer" />)}
                       <div>
                         {/* 메신저 방의 일반 RP 글은 말하는 캐릭터가 바뀔 때만 이름 (사용자 확정) */}
                         {nameNeeded && <div className="who">{name}</div>}
