@@ -166,6 +166,7 @@ export default function RpPage() {
   const [newOpen, setNewOpen] = useState(false);
   const [nTitle, setNTitle] = useState('');
   const [nStyle, setNStyle] = useState<'script' | 'imsg'>('script');   // 표시 방식 — 기본 / 메신저(아이폰 문자)
+  const [renameText, setRenameText] = useState<string | null>(null);   // 역극명 바꾸기 창 (커플홈 사용자 요청) — null이면 닫힘
   const [nRel, setNRel] = useState('none');
   const [nAu, setNAu] = useState('base');   // 고른 자관의 AU (v2.0 사용자 요청)
   const [nMembers, setNMembers] = useState<string[]>([]);
@@ -361,6 +362,11 @@ export default function RpPage() {
                       {imsg ? '기본' : '메신저'}
                     </button>
                   )}
+                  {/* 역극명 바꾸기 (커플홈 사용자 요청) */}
+                  {canManage && (
+                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+                      onClick={() => setRenameText(sel.title)}>RENAME</button>
+                  )}
                   {/* 삭제된 캐릭터가 남아 있으면 재연동 (v1.9) */}
                   {canManage && brokenChars.length > 0 && (
                     <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5, color: 'var(--accent)' }}
@@ -404,8 +410,17 @@ export default function RpPage() {
                     </span>
                   );
                   if (m.kind === 'desc') {
-                    // 메신저 모양에서는 지문이 아이폰 문자의 가운데 안내 글씨처럼
-                    return <div key={m.id} className={imsg ? 'im-sys' : 'msg-desc'}>{m.text}{acts}</div>;
+                    // 메신저 모양에서는 지문이 아이폰 문자의 가운데 안내 글씨처럼.
+                    // 「2008.07.03」처럼 날짜로 시작하는 지문은 날짜 줄로 (사용자 요청 — 시각은 손으로 적는다)
+                    if (imsg) {
+                      const dm = m.text.trim().match(/^(\d{4}\s?[.\-/]\s?\d{1,2}\s?[.\-/]\s?\d{1,2}\.?)([\s\S]*)$/);
+                      return (
+                        <div key={m.id} className={`im-sys${dm ? ' im-date' : ''}`}>
+                          {dm ? <><b>{dm[1]}</b>{dm[2]}</> : m.text}{acts}
+                        </div>
+                      );
+                    }
+                    return <div key={m.id} className="msg-desc">{m.text}{acts}</div>;
                   }
                   const ch = rpChars.find(c => c.id === m.charId);
                   const name = ch?.name ?? '';
@@ -574,6 +589,19 @@ export default function RpPage() {
       </Modal>
 
       {/* 메시지 수정 (본인) */}
+      {/* 역극명 바꾸기 (커플홈 사용자 요청) — 개설자·관리자 */}
+      <Modal open={renameText !== null} onClose={() => setRenameText(null)} small title="역극명 바꾸기"
+        actions={<>
+          <button className="btn btn-ghost" onClick={() => setRenameText(null)}>CANCEL</button>
+          <button className="btn btn-dark" onClick={() => {
+            const t = (renameText ?? '').trim();
+            if (!t) { toast('역극명을 입력해 주세요'); return; }
+            patchRoom({ title: t }); setRenameText(null); toast('역극명을 바꿨습니다');
+          }}>SAVE</button>
+        </>}>
+        <KInput value={renameText ?? ''} onChange={e => setRenameText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { const t = (renameText ?? '').trim(); if (t) { patchRoom({ title: t }); setRenameText(null); } } }} />
+      </Modal>
       <Modal open={editMsg !== null} onClose={() => setEditMsg(null)} small title="메시지 수정" dirty
         actions={<>
           <button className="btn btn-ghost" onClick={() => setEditMsg(null)}>CANCEL</button>
