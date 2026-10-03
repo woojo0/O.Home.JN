@@ -455,7 +455,8 @@ export default function RpPage() {
                     <div key={m.id} className={`msg ${rightSide ? 'me' : ''}`} style={{ ['--cc' as string]: hexRgb(ch?.color) }}>
                       <Face ch={ch} className="face" />
                       <div>
-                        <div className="who">{name}</div>
+                        {/* 메신저 방의 일반 RP 글에는 이름을 안 적는다 (사용자 확정) — 얼굴만으로 충분 */}
+                        {!imsg && <div className="who">{name}</div>}
                         <div className="bub">{m.text}</div>
                         {/* 메신저 방에서는 시각을 안 적는다 (사용자 확정) — 일반 RP 글도 마찬가지 */}
                         {!imsg && <div style={{ fontSize: 9, color: 'var(--faint)', marginTop: 3 }}>{fmtHM(m.date)}</div>}
