@@ -126,17 +126,21 @@ export default function RpPage() {
     const img = imsg && kind === 'char' ? pendingImg : null;
     if (!t && !img) return;
     const imgId = img ? await putBlob(img.file) : undefined;
-    const m: RpMessage = {
-      id: newId(), kind, charId: kind === 'char' ? speaker : undefined,
+    const base = {
+      kind, charId: kind === 'char' ? speaker : undefined,
       // 발화 당시 소유 기록 — 캐릭터가 삭제돼도 재연동 시 어느 리스트에서 고를지 판별 (v1.9)
       charOwn: kind === 'char' ? rpChars.find(c => c.id === speaker)?.own : undefined,
-      authorId: user.id, text: t, date: new Date().toISOString(),
+      authorId: user.id,
       ...(imsg && plainRp ? { rp: true } : {}),   // 메신저 방의 「일반 RP」 — 원래 역극 모양으로 (커플홈)
-      ...(imgId ? { imgId } : {}),
     };
+    // 사진과 글을 같이 보내면 **따로 두 개**로 (사용자 확정 — 한 글에 사진+말풍선이 붙는 모양이 별로였다): 사진 먼저, 글 다음
+    const now = Date.now();
+    const out: RpMessage[] = [];
+    if (imgId) out.push({ ...base, id: newId(), text: '', date: new Date(now).toISOString(), imgId });
+    if (t) out.push({ ...base, id: newId(), text: t, date: new Date(now + (imgId ? 1 : 0)).toISOString() });
     // 방은 건드리지 않는다 — 발화만 자기 행으로 (v2.0)
-    setMsgRows([...msgRows, { ...m, roomId: sel.id }]);
-    rpMarkRead(sel.id, user.id, m.date);
+    setMsgRows([...msgRows, ...out.map(m => ({ ...m, roomId: sel.id }))]);
+    rpMarkRead(sel.id, user.id, out[out.length - 1].date);
     setText('');
     if (img) { URL.revokeObjectURL(img.url); setPendingImg(null); }
     // 알림 (4.13) — 나를 제외한 참여자에게, 방 단위로 묶어서 (디스코드 DM은 봇 연동 시)
