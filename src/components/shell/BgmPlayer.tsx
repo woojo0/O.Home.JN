@@ -325,12 +325,15 @@ export function BgmPlayer() {
               </div>
             )}
             {tracks.length === 0 && <div className="it"><small>이 플레이리스트에는 곡이 없습니다</small></div>}
-            {tracks.map((t, i) => (
-              <div key={t.id} className={`it ${i === idx ? 'on' : ''}`}
-                onClick={() => { playAt(i); setListOpen(false); }}>
-                <b>{t.title}</b><small>{t.desc}</small>
-              </div>
-            ))}
+            {/* 곡은 8개까지 보이고 넘어가면 안에서 스크롤 (사용자 요청) */}
+            <div className="tracks">
+              {tracks.map((t, i) => (
+                <div key={t.id} className={`it ${i === idx ? 'on' : ''}`}
+                  onClick={() => { playAt(i); setListOpen(false); }}>
+                  <b>{t.title}</b><small>{t.desc}</small>
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}

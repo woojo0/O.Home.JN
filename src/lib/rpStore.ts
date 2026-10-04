@@ -35,6 +35,17 @@ export interface RpRoom {
   messages: RpMessage[];
 }
 
+/** 입력 중 표시 (v2.1 사용자 요청) — 「캐릭터이름 is typing...」. 방·사람당 문서 하나(id = roomId:userId).
+ *  입력하는 동안 몇 초마다 at을 갱신하고, 보내거나 손을 떼면 지운다. 받는 쪽은 at이 최근인 것만 보여 준다 */
+export interface RpTyping {
+  id: string;
+  roomId: string;
+  authorId: string;
+  name: string;          // 그때 고른 발화자 이름 (지문이면 닉네임)
+  at: number;            // Date.now()
+  visibility: 'member';  // 같은 홈 회원에게 보이게
+}
+
 /**
  * 이 방의 참여 회원 (v2.0 사용자 확정).
  *

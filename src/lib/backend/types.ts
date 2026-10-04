@@ -142,6 +142,9 @@ export const COLLECTION_OF: Record<string, string> = {
   // 역극 발화 — 방 안이 아니라 자기 문서로 (v2.0). 같은 이유로, 방 안에 두면 말할 때마다
   // 방을 UPDATE 해야 해서 남이 만든 방에서 참여자가 발화할 수 없었다
   'ohome.rpmsgs.v1': 'rp_messages',
+  // 역극 입력 중 표시 (v2.1 사용자 요청) — 방·사람당 문서 하나, 몇 초 뒤 지워지는 가벼운 표시.
+  // 발화(rp_messages)에 섞으면 표시 한 번마다 모든 참여자가 발화 전체를 다시 받게 돼 따로 둔다
+  'ohome.rptyping.v1': 'rp_typing',
   // 감상타래 글 — 타래 안이 아니라 자기 문서로 (커플홈). 같은 이유로, 타래 안에 두면
   // 상대 오너가 관리자 타래에 이어 쓸 수 없다 (두 사람이 같이 쓰는 타래)
   'ohome.thrposts.v1': 'thread_posts',

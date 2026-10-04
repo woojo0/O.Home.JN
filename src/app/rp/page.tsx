@@ -5,6 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
+import type { RpTyping } from '@/lib/rpStore';
 import {
   RpRoom, RpMessage, RP_SEED, hexRgb, rpLastDate, rpHasNew,
   RpMessageRow, RP_MSG_KEY, RP_MSG_SEED, messagesFor, rpMarkRead, rpMemberIds,
@@ -117,6 +118,51 @@ export default function RpPage() {
   }, [sel?.id, msgRows.length]);
 
   const [text, setText] = useState('');
+
+  /* 상대가 입력 중 (v2.1 사용자 요청) — 「캐릭터이름 is typing...」을 입력창 위에.
+     입력하는 동안 3초마다 rp_typing에 내 표시(방·사람당 문서 하나)를 남기고, 보내거나 5초 쉬면 지운다.
+     받는 쪽은 8초 안의 표시만 보여 준다. 다른 사람 문서는 절대 건드리지 않는다(규칙도 막는다) */
+  const [typingRows, setTypingRows, typingLoaded] = useLocalList<RpTyping>('ohome.rptyping.v1', []);
+  const typingRef = useRef<RpTyping[]>(typingRows);
+  typingRef.current = typingRows;
+  const typingAt = useRef(0);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
+  const myTypingId = sel && user ? `${sel.id}:${user.id}` : null;
+  const stopTyping = () => {
+    typingAt.current = 0;
+    if (typingTimer.current) { clearTimeout(typingTimer.current); typingTimer.current = null; }
+    if (myTypingId && typingRef.current.some(t => t.id === myTypingId)) {
+      setTypingRows(typingRef.current.filter(t => t.id !== myTypingId));
+    }
+  };
+  const noteTyping = (v: string) => {
+    if (!sel || !user || !myTypingId) return;
+    if (!v.trim()) { stopTyping(); return; }
+    if (typingTimer.current) clearTimeout(typingTimer.current);
+    typingTimer.current = setTimeout(stopTyping, 5000);
+    const t = Date.now();
+    if (t - typingAt.current < 3000) return;
+    typingAt.current = t;
+    const name = speaker === 'desc' ? user.nickname : (rpChars.find(c => c.id === speaker)?.name ?? user.nickname);
+    const row: RpTyping = { id: myTypingId, roomId: sel.id, authorId: user.id, name, at: t, visibility: 'member' };
+    setTypingRows([...typingRef.current.filter(x => x.id !== myTypingId), row]);
+  };
+  // 방을 나가거나 바꾸면 내 표시를 지운다
+  useEffect(() => () => { stopTyping(); }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 지난 접속에서 남은 내 표시(탭을 그냥 닫은 경우)는 처음 받았을 때 한 번 치운다
+  const typingCleaned = useRef(false);
+  useEffect(() => {
+    if (typingCleaned.current || !typingLoaded || !user) return;
+    typingCleaned.current = true;
+    if (typingRows.some(t => t.authorId === user.id)) setTypingRows(typingRows.filter(t => t.authorId !== user.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typingLoaded, user?.id]);
+  const othersTyping = sel && user
+    ? typingRows.filter(t => t.roomId === sel.id && t.authorId !== user.id && now - t.at < 8000)
+    : [];
+
   const [plainRp, setPlainRp] = useState(false);   // 메신저 방에서 「일반 RP」로 보내기 (커플홈 사용자 요청) — 원래 역극 모양
   const [pendingImg, setPendingImg] = useState<{ file: File; url: string } | null>(null);   // 보낼 사진 (메신저 방, 커플홈)
   const [lbImg, setLbImg] = useState<string | null>(null);   // 사진 크게 보기
@@ -128,6 +174,7 @@ export default function RpPage() {
     // 사진만 보내는 문자도 된다 (커플홈 — 메신저 방의 사진 메시지). 지문에는 사진이 안 붙는다
     const img = imsg && kind === 'char' ? pendingImg : null;
     if (!t && !img) return;
+    stopTyping();   // 보냈으니 「입력 중」 표시는 내린다
     const imgId = img ? await putBlob(img.file) : undefined;
     const base = {
       kind, charId: kind === 'char' ? speaker : undefined,
@@ -508,6 +555,12 @@ export default function RpPage() {
                 )}
               </div>
 
+              {/* 상대가 입력 중 — 입력창 바로 위 (v2.1 사용자 요청). 비어 있어도 자리는 둬 입력창이 들썩이지 않게 */}
+              {sel.status === 'ongoing' && (
+                <div className="rp-typing">
+                  {othersTyping.length > 0 && `${[...new Set(othersTyping.map(t => t.name))].join(', ')} is typing...`}
+                </div>
+              )}
               {sel.status === 'ongoing' && (
                 <div className={`rp-input${imsg ? ' imsg' : ''}`}>
                   {/* 발화자 선택 — 캐릭터 / 지문 (v2.0 사용자 확정: 역극에는 이 둘만 있으면 된다) */}
@@ -559,7 +612,7 @@ export default function RpPage() {
                       )}
                       {/* 플레이스홀더 없음 (v1.8) · Enter 전송 / Shift+Enter 줄바꿈 · /desc 명령 지원
                           포커스 중엔 모바일에서 역극 영역만 표시 (v1.9 — blur는 SEND 클릭이 씹히지 않게 지연) */}
-                      <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => setText(e.target.value)}
+                      <KTextarea style={{ minHeight: 44 }} value={text} onChange={e => { setText(e.target.value); noteTyping(e.target.value); }}
                         onFocus={() => setMFocus(true)}
                         onBlur={() => setTimeout(() => setMFocus(false), 180)}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
