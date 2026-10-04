@@ -230,8 +230,11 @@ a{color:inherit;text-decoration:none}
 .bgm-list .it.on b{color:var(--accent-soft,var(--accent))}
 /* 곡 목록은 8개 높이까지만 — 넘으면 안에서 스크롤 (사용자 요청). 한 줄 ≈ 패딩 14 + 제목 16 + 설명 13 */
 .bgm-list .tracks{max-height:calc(8 * (14px + 29px * var(--fs,1)));overflow-y:auto;overscroll-behavior:contain}
-/* 역극 — 상대가 입력 중 표시 (사용자 요청): 입력창 바로 위 한 줄 */
-.rp-typing{font-size:calc(10.5px*var(--fs,1));color:var(--faint);font-style:italic;padding:4px 14px 0;min-height:18px}
+/* 역극 — 상대가 입력 중 표시 (사용자 요청): 메시지 스크롤 영역 안쪽 맨 아래에 겹쳐 띄운다.
+   흐름에 끼우면 생겼다 사라질 때 영역 높이가 바뀌어 스크롤이 덜컹거린다 — 겹치면 높이가 그대로다 */
+.rp-msgs-wrap{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.rp-msgs-wrap > .rp-msgs{flex:1;min-height:0}
+.rp-typing{position:absolute;left:0;right:0;bottom:0;pointer-events:none;font-size:calc(10.5px*var(--fs,1));color:var(--faint);font-style:italic;padding:3px 18px 5px;background:linear-gradient(to top,var(--panel) 60%,transparent)}
 .vol{width:64px;height:3px;border-radius:3px;background:#454b55;position:relative;cursor:var(--cur-pointer,pointer)}
 .vol i{position:absolute;left:0;top:0;height:100%;width:62%;background:var(--bgm-vol);border-radius:3px}
 .vol i::after{content:"";position:absolute;right:-4px;top:-3.5px;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}

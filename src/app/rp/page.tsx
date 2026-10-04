@@ -460,6 +460,8 @@ export default function RpPage() {
                 </div>
               </div>
 
+              {/* 메시지 영역을 감싸는 틀 — 「입력 중」 줄을 이 안에 겹쳐 띄워 영역 높이가 안 바뀌게 (스크롤 덜컹 방지) */}
+              <div className="rp-msgs-wrap">
               <div className={`rp-msgs${imsg ? ' imsg' : ''}`} ref={msgsRef}>
                 {msgsOf(sel).map((m, mi, arr) => {
                   const mine = m.authorId === user.id;
@@ -554,13 +556,14 @@ export default function RpPage() {
                   <p className="hint" style={{ textAlign: 'center', marginTop: 30 }}>첫 메시지를 남겨보세요</p>
                 )}
               </div>
-
-              {/* 상대가 입력 중 — 입력창 바로 위 (v2.1 사용자 요청). 비어 있어도 자리는 둬 입력창이 들썩이지 않게 */}
-              {sel.status === 'ongoing' && (
+              {/* 상대가 입력 중 — 메시지 영역 안쪽 맨 아래에 겹쳐 띄운다 (v2.1 사용자 요청).
+                  흐름에 끼워 넣으면 생겼다 사라질 때마다 메시지 영역 높이가 바뀌어 스크롤이 덜컹거렸다 */}
+              {sel.status === 'ongoing' && othersTyping.length > 0 && (
                 <div className="rp-typing">
-                  {othersTyping.length > 0 && `${[...new Set(othersTyping.map(t => t.name))].join(', ')} is typing...`}
+                  {`${[...new Set(othersTyping.map(t => t.name))].join(', ')} is typing...`}
                 </div>
               )}
+              </div>
               {sel.status === 'ongoing' && (
                 <div className={`rp-input${imsg ? ' imsg' : ''}`}>
                   {/* 발화자 선택 — 캐릭터 / 지문 (v2.0 사용자 확정: 역극에는 이 둘만 있으면 된다) */}
