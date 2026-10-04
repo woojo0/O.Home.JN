@@ -337,6 +337,11 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
       await deleteDoc(doc(db, 'homes', id));
     },
 
+    async setMemberHome(uid, home) {
+      // 규칙: 총관리자는 프로필을 마음대로 고칠 수 있다 (회원 본인은 homeId를 못 바꾼다)
+      await setDoc(doc(db, 'profiles', uid), { homeId: home ?? null }, { merge: true });
+    },
+
     async fetchList<T extends ListItem>(coll: string): Promise<T[]> {
       const sets = await readSets();
       // 반드시 getDocsFromServer — 일반 getDocs는 로컬(오프라인) 캐시가 있으면 그걸로 조용히 성공해

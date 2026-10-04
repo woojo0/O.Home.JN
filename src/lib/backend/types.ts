@@ -79,6 +79,8 @@ export interface Backend {
   updateHome(id: string, patch: Partial<Pick<HomeRow, 'name' | 'inviteCode'>>): Promise<void>;
   /** 홈 문서와 그 안의 설정·콘텐츠를 지운다 (회원 프로필·이미지 파일은 남는다) */
   deleteHome(id: string): Promise<void>;
+  /** 회원을 홈에 연결/해제 — 총관리자 전용. 자관이 지워져 갈 곳을 잃은 회원을 다른 자관에 붙일 때 */
+  setMemberHome(uid: string, homeId: string | null): Promise<void>;
 
   /* ---- 목록(콘텐츠) ---- */
   fetchList<T extends ListItem>(coll: string): Promise<T[]>;

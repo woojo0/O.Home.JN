@@ -119,6 +119,7 @@ export async function createSupabaseBackend(
     async createHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
     async updateHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
     async deleteHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
+    async setMemberHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
 
     async listMembers() {
       // avatar_url도 함께 — 이미지 정리가 프로필 사진을 「안 쓰는 파일」로 지우지 않게 (v2.0 사용자 제보)
