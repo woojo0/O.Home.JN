@@ -14,7 +14,7 @@ import {
   DiaryPost, DIARY_SEED, Mood, MOOD_SEED, moodTint, DIARY_PER_PAGE, useDiarySettings, diaryOrder,
 } from '@/lib/diaryStore';
 import {
-  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath, charInAu,
+  Character, CHAR_SEED, Relation, REL_SEED, openableRels, pairSides, inCharChoices, charGrant, charPath, charInAu, auParamOf,
 } from '@/lib/charStore';
 import { useFonts } from '@/lib/fontStore';
 import { renderBody } from '@/lib/sanitize';
@@ -149,7 +149,6 @@ function DiaryPageInner() {
   if (!loaded) return <section className="page" />;
 
   const moodOf = (id: string) => moods.find(m => m.id === id);
-  const catName = (id?: string) => dset.cats.find(c => c.id === id)?.name;
   const cntCat = (cid: string) => seen.filter(p => cid === 'all' || (cid === 'none' ? !p.catId : p.catId === cid)).length;
   // 쓰기 — 그 칸의 캐릭터와 지금 보고 있는 구분을 골라 둔 채로 연다
   const writeHref = (cid?: string) => {
@@ -167,14 +166,13 @@ function DiaryPageInner() {
   const renderRow = (p: DiaryPost, side: Side) => {
     const m = moodOf(p.moodId);
     const opened = open[side] === p.id;
-    const cat = catName(p.catId);
     return (
       <div key={p.id} id={p.id} className={`dy-row ${opened ? 'open' : ''}`}>
         {/* 접힘: 제목 세로 중앙 / 펼침: 위 정렬 (4.14 v1.8) */}
         <div className="hd" onClick={() => setOpen(o => ({ ...o, [side]: o[side] === p.id ? null : p.id }))}>
           <MoodIcon mood={m} />
           <b className="tt">{p.title}</b>
-          {cat && <span className="pill" style={{ flexShrink: 0 }}>{cat}</span>}
+          {/* 구분 뱃지는 두지 않는다 (사용자 확정) — 위에 구분 탭이 있어 겹친다 */}
           {p.visibility !== 'public' && (
             <span className="pill" style={{ flexShrink: 0 }}>{p.visibility === 'member' ? '멤버' : '비공개'}</span>
           )}
@@ -225,7 +223,11 @@ function DiaryPageInner() {
             {/* 프로필 사진을 누르면 캐릭터 페이지로 (커플홈 사용자 요청) */}
             <span className={`cf ${ch ? 'go' : ''}`} data-tip={ch ? '프로필 보기' : undefined}
               style={{ background: ch?.color ?? 'var(--line)', ['--cc' as string]: ch?.color ?? 'var(--line)' }}
-              onClick={() => { if (ch) router.push(charPath(ch)); }}>
+              onClick={() => {
+                // AU 탭이면 그 AU 프로필로 바로 (사용자 제보 — 원래 프로필로 갔다)
+                if (!baseCh) return;
+                router.push(catAu && ch !== baseCh ? `${charPath(baseCh)}?au=${encodeURIComponent(auParamOf(baseCh, rels, catAu))}` : charPath(baseCh));
+              }}>
               {ch?.thumbId && <CroppedBlobImg fileRef={ch.thumbId} crop={ch.thumbCrop} />}
             </span>
             {/* 세로값 고정 + 글자 크기를 거기에 맞춘다 (커플홈 사용자 요청) — 두 칸 이름의 폰트가 달라도
