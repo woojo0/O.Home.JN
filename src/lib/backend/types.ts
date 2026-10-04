@@ -25,6 +25,16 @@ export interface BackendUser {
   email?: string;
   avatarUrl?: string;
   avatarColor?: string;
+  /** 속한 홈(자관) — 가입코드로 정해진다. 총관리자는 없다 (v2.1) */
+  homeId?: string;
+}
+
+/** 홈(자관) 한 칸 — homes/{id} (v2.1) */
+export interface HomeRow {
+  id: string;
+  name: string;
+  inviteCode: string;
+  createdAt?: number;
 }
 
 /** 연결·규칙 점검 결과 (설치 화면의 [연결 확인]) */
@@ -48,7 +58,8 @@ export interface Backend {
   currentUser(): Promise<BackendUser | null>;
   onAuthChange(cb: (u: BackendUser | null) => void): () => void;
   signIn(id: string, password: string): Promise<{ ok: boolean; error?: string }>;
-  signUp(id: string, password: string, nickname: string): Promise<{ ok: boolean; error?: string }>;
+  /** 가입 — inviteCode가 있으면 그 코드의 홈에 속한 회원으로, 없으면 홈 없는 계정(총관리자 설치용) (v2.1) */
+  signUp(id: string, password: string, nickname: string, inviteCode?: string): Promise<{ ok: boolean; error?: string }>;
   signOut(): Promise<void>;
   resetPassword(email: string): Promise<{ ok: boolean; error?: string }>;
   updateProfile(patch: { nickname?: string; avatarUrl?: string | null; avatarColor?: string | null }): Promise<{ ok: boolean; error?: string }>;
@@ -57,7 +68,17 @@ export interface Backend {
   /** 가입 회원 목록 — 역극 참여자 선택·회원 관리 화면용.
    *  avatarUrl도 내준다 (v2.0 사용자 제보) — 이미지 정리가 콘텐츠·설정만 훑던 시절, 프로필 사진은
    *  어디에도 참조가 안 잡혀 「아무도 안 쓰는 파일」로 지워졌다. */
-  listMembers(): Promise<{ id: string; nickname: string; role: 'admin' | 'member'; email?: string; avatarUrl?: string }[]>;
+  listMembers(): Promise<{ id: string; nickname: string; role: 'admin' | 'member'; email?: string; avatarUrl?: string; homeId?: string }[]>;
+
+  /* ---- 홈(자관) (v2.1) ---- */
+  /** 이후의 콘텐츠·설정 읽기/쓰기가 향할 홈 — 부팅 때 한 번 정한다. null = 홈 없음(리스트 화면) */
+  setHome(homeId: string | null): void;
+  /** 총관리자: 전체 / 회원: 자기 홈 하나 */
+  listHomes(): Promise<HomeRow[]>;
+  createHome(h: HomeRow): Promise<void>;
+  updateHome(id: string, patch: Partial<Pick<HomeRow, 'name' | 'inviteCode'>>): Promise<void>;
+  /** 홈 문서와 그 안의 설정·콘텐츠를 지운다 (회원 프로필·이미지 파일은 남는다) */
+  deleteHome(id: string): Promise<void>;
 
   /* ---- 목록(콘텐츠) ---- */
   fetchList<T extends ListItem>(coll: string): Promise<T[]>;

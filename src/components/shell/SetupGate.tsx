@@ -20,7 +20,8 @@ import { FIRESTORE_RULES, STORAGE_RULES } from '@/lib/firebaseRules';
 export function SetupGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [need, setNeed] = useState(false);
-  const [kind, setKind] = useState<BackendKind | null>(null);
+  // 자관(홈) 분리판(v2.1)은 Firebase만 지원한다 — 서비스 선택 없이 바로 Firebase 단계로
+  const [kind, setKind] = useState<BackendKind | null>('firebase');
 
   // Supabase 입력
   const [sbUrl, setSbUrl] = useState('');
@@ -392,7 +393,7 @@ export function SetupGate({ children }: { children: React.ReactNode }) {
             {check?.ok && !check.hasAdmin && !signed && (
               <li>
                 <b>관리자 계정 만들기</b>
-                <small>여기서 만드는 첫 계정이 이 홈의 관리자가 됩니다.</small>
+                <small>여기서 만드는 첫 계정이 총관리자가 됩니다 — 로그인하면 자관 리스트가 뜨고, 거기서 자관을 만들어 가입코드를 나눠 줍니다.</small>
                 <label className="k-label">이메일</label>
                 <KInput value={email} onChange={e => setEmail(e.target.value)} />
                 <div className="setup-2">
@@ -479,10 +480,6 @@ export function SetupGate({ children }: { children: React.ReactNode }) {
         {err && <p className="setup-err">{err}</p>}
 
         {doneStep && <button className="btn btn-accent setup-go" onClick={start}>홈 시작하기</button>}
-        {kind && (
-          <button className="btn btn-ghost setup-back"
-            onClick={() => { setKind(null); setErr(''); setCheck(null); setRulesOpen(false); }}>← 다른 서비스 고르기</button>
-        )}
 
         <div className="setup-sep" />
         <label className="k-label">이미 백업이 있다면</label>

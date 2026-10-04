@@ -10,6 +10,7 @@
 // 쓰기는 캐시 → localStorage(첫 페인트용 사본) → DB 순으로 나간다.
 import { backend, isServerMode } from './backend';
 import { serverConfig } from './serverConfig';
+import { currentHomeId } from './home';
 
 const cache = new Map<string, unknown>();
 let primed = false;
@@ -28,6 +29,7 @@ const LOCAL_ONLY = new Set<string>([
      일반 회원은 서버에 고칠 수도 없다 — 알림 목록과 같은 기기 보관으로 되돌린다. */
   'ohome.notifset.v1',
   'ohome.settingsFrom.v1', // 이 브라우저의 설정 사본이 어느 DB에서 왔는지 (아래 primeSettings)
+  'ohome.home.v1',         // 총관리자가 리스트에서 고른 홈 (v2.1)
 ]);
 
 /** 이 브라우저의 설정 사본 출처 — 'firebase:<projectId>' / 'supabase:<url>' / 'local' */
@@ -38,8 +40,10 @@ const DERIVED_KEYS = ['ohome.themeCss.v1', 'ohome.theme.v1'];
 function configIdentity(): string {
   const cfg = serverConfig();
   if (!cfg) return 'local';
-  if (cfg.kind === 'firebase') return `firebase:${cfg.projectId}${cfg.databaseId ? '/' + cfg.databaseId : ''}`;
-  return `supabase:${cfg.url.replace(/\/+$/, '')}`;
+  // 홈(자관)도 출처의 일부 — 총관리자가 다른 홈으로 들어가면 앞 홈의 사본을 비운다 (v2.1)
+  const home = currentHomeId() ? `#${currentHomeId()}` : '';
+  if (cfg.kind === 'firebase') return `firebase:${cfg.projectId}${cfg.databaseId ? '/' + cfg.databaseId : ''}${home}`;
+  return `supabase:${cfg.url.replace(/\/+$/, '')}${home}`;
 }
 
 /**

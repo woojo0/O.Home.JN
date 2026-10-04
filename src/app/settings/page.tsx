@@ -4,6 +4,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, inviteCode, setInviteCode } from '@/lib/auth';
 import { useMembers } from '@/lib/members';
+import { currentHomeId } from '@/lib/home';
 import { useTheme } from '@/lib/ThemeProvider';
 import { ThemeVars } from '@/lib/theme';
 import { ColorField } from '@/components/ui/ColorField';
@@ -1040,7 +1041,16 @@ function MemberPane() {
   const [codeLoaded, setCodeLoaded] = useState(false);
   const [regVer, setRegVer] = useState(0);   // 가입 계정 삭제 후 목록 갱신용
   const [removedIds, setRemovedIds] = useState<string[]>([]);   // 서버 모드에서 방금 지운 회원
-  useEffect(() => { setCode(inviteCode()); setCodeLoaded(true); }, []);
+  // 가입코드 — 서버 모드에서는 **이 자관(홈)의 코드**(homes/{id}.inviteCode), 로컬 모드는 예전 설정 키 (v2.1)
+  useEffect(() => {
+    const be = backend();
+    const home = currentHomeId();
+    if (!be || !home) { setCode(inviteCode()); setCodeLoaded(true); return; }
+    be.listHomes()
+      .then(hs => { setCode(hs.find(h => h.id === home)?.inviteCode ?? ''); })
+      .catch(() => { /* 못 받으면 빈 칸 */ })
+      .finally(() => setCodeLoaded(true));
+  }, []);
   void regVer;
 
   const members = useMembers();
@@ -1104,9 +1114,16 @@ function MemberPane() {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <KInput value={code} onChange={e => setCode(e.target.value)} style={{ width: 220 }} />
           <button className="btn btn-dark" disabled={!codeLoaded}
-            onClick={() => {
+            onClick={async () => {
               if (!code.trim()) { toast('가입코드를 입력해 주세요'); return; }
-              setInviteCode(code);
+              const be = backend();
+              const home = currentHomeId();
+              if (be && home) {
+                try { await be.updateHome(home, { inviteCode: code.trim() }); }
+                catch (e) { toast(`저장하지 못했습니다 — ${(e as { message?: string })?.message ?? ''}`); return; }
+              } else {
+                setInviteCode(code);
+              }
               toast('가입코드가 변경되었습니다');
             }}>SAVE</button>
         </div>

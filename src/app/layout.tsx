@@ -12,6 +12,7 @@ import { TipLayer } from '@/components/ui/TipLayer';
 import { CursorLayer } from '@/components/shell/CursorLayer';
 import { ImgProtect } from '@/components/shell/ImgProtect';
 import { SetupGate } from '@/components/shell/SetupGate';
+import { HomeGate } from '@/components/shell/HomeGate';
 import { DocTitle } from '@/components/shell/DocTitle';
 import { DocIcon } from '@/components/shell/DocIcon';
 import { SettingSync } from '@/components/shell/SettingSync';
@@ -84,6 +85,8 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                 <BgmStoreProvider>
                   {/* 설치 초기 화면 — 첫 실행이면 관리자·게스트 설정/백업 복원만 표시 (v1.9) */}
                   <SetupGate>
+                  {/* 홈(자관) 게이트 (v2.1) — 비로그인: 로그인 카드 · 총관리자: 자관 리스트 · 회원: 자기 자관 */}
+                  <HomeGate>
                   <TopBar />
                   {/* 앱 셸: 스크롤은 이 영역 안에서만 (7장) */}
                   {/* PageFrame: 같은 메뉴를 다시 누르면 이 안쪽만 remount (BGM·상단바는 유지, v1.9) */}
@@ -108,6 +111,7 @@ if(navigator.userAgent.indexOf('Whale/')>-1){document.documentElement.style.colo
                   <UploadBusy />
                   {/* 맞춤법 검사 밑줄 숨김 — 디자인 탭 (v2.0) */}
                   <SpellCheck />
+                  </HomeGate>
                   </SetupGate>
                 </BgmStoreProvider>
               </MainStoreProvider>

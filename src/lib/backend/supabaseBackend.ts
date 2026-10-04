@@ -112,6 +112,14 @@ export async function createSupabaseBackend(
     // Supabase는 스키마의 트리거가 첫 가입자를 관리자로 만들어 준다 — 추가 작업 없음
     async claimOwner() { return { ok: true }; },
 
+    /* 홈(자관) 분리 (v2.1)는 Firebase에서만 지원한다 — Supabase는 설치 화면에서 숨겼고, 여기서는
+       빈 구현만 둔다(한 홈으로 동작). 스키마에 home_id 컬럼·RLS를 더하면 같은 모양으로 확장할 수 있다. */
+    setHome() { /* 미지원 */ },
+    async listHomes() { return []; },
+    async createHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
+    async updateHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
+    async deleteHome() { throw new Error("Supabase에서는 자관(홈) 분리를 지원하지 않습니다."); },
+
     async listMembers() {
       // avatar_url도 함께 — 이미지 정리가 프로필 사진을 「안 쓰는 파일」로 지우지 않게 (v2.0 사용자 제보)
       const { data, error } = await sb.from('profiles').select('id, nickname, role, avatar_url').order('created_at');

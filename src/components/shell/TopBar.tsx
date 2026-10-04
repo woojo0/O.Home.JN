@@ -12,6 +12,7 @@ import { useSections, sectionMenuEntries } from '@/lib/sectionStore';
 import { useCustomLinks, linkEntries } from '@/lib/linkStore';
 import { useSiteSettings } from '@/lib/siteStore';
 import { useAuth } from '@/lib/auth';
+import { currentHomeId, leaveHome } from '@/lib/home';
 import { useMainStore } from '@/lib/mainStore';
 import { useBlobUrl } from '@/lib/blobStore';
 import { refreshPage } from '@/lib/pageRefresh';
@@ -314,6 +315,10 @@ export function TopBar() {
                   </button>
                 )}
                 <button onClick={() => { setMenuOpen(false); nav('/settings'); }}>환경설정</button>
+                {/* 총관리자는 자관 리스트에서 골라 들어온다 — 돌아가는 길 (v2.1) */}
+                {currentHomeId() && (
+                  <button onClick={() => { setMenuOpen(false); leaveHome(); }}>리스트로</button>
+                )}
               </>
             )}
             <button onClick={() => { setMenuOpen(false); logout(); }}>로그아웃</button>
