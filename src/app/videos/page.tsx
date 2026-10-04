@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, secQuery } from '@/lib/sectionStore';
+import { useMenuSettings, canWriteAt, writeKeyOf } from '@/lib/menuStore';
 import { useLocalList, fmtDate } from '@/lib/postStore';
 import { VideoPost, VIDEO_KEY, VIDEO_SEED } from '@/lib/videoStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
@@ -18,6 +19,7 @@ function VideosPageInner() {
   const [postsAll] = useLocalList<VideoPost>(VIDEO_KEY, VIDEO_SEED);
   // 여러 개로 만든 섹션 — 주소의 ?s= 가 가리키는 것만
   const sec = useSectionParam('videos');
+  const [menuSet] = useMenuSettings();
   const posts = filterSection(postsAll, sec.id);
   const [q, setQ] = useState('');
   const query = q.trim().toLowerCase();
@@ -42,8 +44,8 @@ function VideosPageInner() {
         <div />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar onSearch={setQ} />
-          {/* 로그인한 회원이면 올릴 수 있다 (두 사람이 같이 쓰는 홈) */}
-          {user && (
+          {/* 글쓰기 권한 (커플홈) — 환경설정 「권한」에서 게시판마다 · 멤버 선택으로 좁힐 수 있다 */}
+          {canWriteAt(menuSet, writeKeyOf('/videos', sec.id), { loggedIn: !!user, isAdmin, id: user?.id }) && (
             <button className="btn btn-dark" onClick={() => router.push('/videos/write' + secQuery('videos', sec.id))}>✎ WRITE</button>
           )}
         </div>

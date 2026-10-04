@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
+import { useMenuSettings, canWriteAt, writeKeyOf } from '@/lib/menuStore';
 import { useLocalList } from '@/lib/postStore';
 import {
   DotoriItem, DotoriStatus, DOTORI_SEED, DOTORI_STATUS_KEYS, useTrpgSettings, dotoriBadgeStyle,
@@ -24,6 +25,7 @@ function DotoriPageInner() {
   const [itemsAll, setItemsAll, loaded] = useLocalList<DotoriItem>('ohome.dotori.v1', DOTORI_SEED);
   // 여러 개로 만든 섹션 (v2.0) — 주소의 ?s= 가 가리키는 것만 보여 준다
   const sec = useSectionParam('dotori');
+  const [menuSet] = useMenuSettings();
   const items = filterSection(itemsAll, sec.id);
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setItems = sectionSetter(itemsAll, sec.id, setItemsAll);
@@ -99,7 +101,8 @@ function DotoriPageInner() {
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchBar placeholder="시나리오·라이터·태그 검색" onSearch={setQ} />
-          {user && <button className="btn btn-dark" onClick={() => router.push('/dotori/new' + secQuery('dotori', sec.id))}>＋ ADD</button>}
+          {/* 등록 권한 (커플홈) — 환경설정 「권한」에서 게시판마다 · 멤버 선택으로 좁힐 수 있다 */}
+          {canWriteAt(menuSet, writeKeyOf('/dotori', sec.id), { loggedIn: !!user, isAdmin, id: user?.id }) && <button className="btn btn-dark" onClick={() => router.push('/dotori/new' + secQuery('dotori', sec.id))}>＋ ADD</button>}
         </div>
       </div>
 

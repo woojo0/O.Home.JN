@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, newId } from '@/lib/postStore';
 import { useSectionParam, secStamp, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
+import { useMenuSettings, canWriteAt, writeKeyOf } from '@/lib/menuStore';
 import { VideoPost, VIDEO_KEY, VIDEO_SEED, videoEmbed, isVideoLink } from '@/lib/videoStore';
 import { isFileUrl } from '@/lib/transfer';
 import { isServerMode } from '@/lib/backend';
@@ -54,10 +55,11 @@ function PosterPreview({ p }: { p: Poster }) {
 
 export function VideoForm({ initial }: { initial: VideoPost | null }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const toast = useToast();
   const [posts, setPosts] = useLocalList<VideoPost>(VIDEO_KEY, VIDEO_SEED);
   const sec = useSectionParam('videos');
+  const [menuSet, , menuLoaded] = useMenuSettings();
   const isNew = !initial;
   const tt = useSectionTitle('videos', initial ? (initial.secId ?? MAIN_SEC) : sec.id, isNew ? 'WRITE' : 'EDIT');
   const [title, setTitle] = useState(initial?.title ?? '');
@@ -79,6 +81,16 @@ export function VideoForm({ initial }: { initial: VideoPost | null }) {
     return (
       <section className="page">
         <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>글쓰기는 로그인 후 이용할 수 있습니다</p></div>
+      </section>
+    );
+  }
+  /* 글쓰기 권한 (커플홈) — WRITE 버튼과 같은 판정으로 주소 직접 진입도 막는다. 새 글만 — 자기 글 수정은 그대로.
+     설정을 읽기 전에는 폼을 그리지 않는다 (먼저 그리면 막힐 사람에게 폼이 한 번 비친다) */
+  if (isNew && !menuLoaded) return <section className="page" />;
+  if (isNew && !canWriteAt(menuSet, writeKeyOf('/videos', sec.id), { loggedIn: true, isAdmin, id: user.id })) {
+    return (
+      <section className="page">
+        <div className="page-head"><PageTitle href={tt.href}>{tt.title}</PageTitle><p>허용된 회원만 글을 쓸 수 있는 게시판입니다</p></div>
       </section>
     );
   }

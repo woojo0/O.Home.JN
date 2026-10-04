@@ -6,13 +6,14 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery, sectionHref } from '@/lib/sectionStore';
+import { useMenuSettings, canWriteAt, writeKeyOf } from '@/lib/menuStore';
 import {
   useLocalList, newId, fmtDate, Comment,
   CommentRow, COMMENT_KEY, COMMENT_SEED, commentsFor,
 } from '@/lib/postStore';
 import {
   ThreadWork, ThreadPost, THREAD_SEED, useThreadSettings, threadCats, catLabel, threadBadgeStyle, lastDate, fmtMD, fmtMDHM,
-  THR_POST_KEY, THR_POST_SEED, ThreadPostRow, MergedPost, postsOf, canWriteThreads, threadPartnerIds,
+  THR_POST_KEY, THR_POST_SEED, ThreadPostRow, MergedPost, postsOf, threadPartnerIds,
 } from '@/lib/threadStore';
 import { Character, CHAR_SEED, inCharChoices, Relation, REL_SEED, charInAu, charAuOptions } from '@/lib/charStore';
 import { useMembers, type MemberLite } from '@/lib/members';
@@ -114,6 +115,7 @@ function ThreadsPageInner() {
   const [worksAll, setWorksAll, loaded] = useLocalList<ThreadWork>('ohome.threads.v1', THREAD_SEED);
   // 여러 개로 만든 섹션 (v2.0) — 주소의 ?s= 가 가리키는 것만 보여 준다
   const sec = useSectionParam('threads');
+  const [menuSet] = useMenuSettings();
   const works = filterSection(worksAll, sec.id);
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setWorks = sectionSetter(worksAll, sec.id, setWorksAll);
@@ -139,7 +141,8 @@ function ThreadsPageInner() {
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);   // AU 캐릭터로 쓰기 (커플홈) — 자관의 AU 목록
   const [postRows, setPostRows] = useLocalList<ThreadPostRow>(THR_POST_KEY, THR_POST_SEED);
   const pool = useMembers();
-  const canWrite = canWriteThreads(chars, { isAdmin, id: user?.id });
+  // 글쓰기 권한 (커플홈) — 환경설정 「권한」에서 타래 게시판마다 (기본: 로그인한 회원) · 멤버 선택으로 좁힐 수 있다
+  const canWrite = canWriteAt(menuSet, writeKeyOf('/threads', sec.id), { loggedIn: !!user, isAdmin, id: user?.id });
   const postsOfW = (w: ThreadWork): MergedPost[] => postsOf(w, postRows);
   /** 타래 정보 수정·삭제 — 관리자 또는 그 타래를 시작한 사람 */
   const canManageWork = (w: ThreadWork) => isAdmin || (!!user && w.createdBy === user.id);
