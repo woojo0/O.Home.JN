@@ -69,8 +69,8 @@ function BackupPageInner() {
   const sort = useCardSort(visible, next => setPosts(mergeOrder(posts, next)), editOn && isAdmin);
 
   /* 게시물이 쌓이면 페이지로 (v2.0 사용자 요청) — 보기에 따라 한 장 분량이 다르다.
-     갤러리 보기는 한 줄에 3개라 6개(2줄), 리스트 보기는 10개 (사용자 확정). */
-  const PER = view === 'gal' ? 6 : 10;
+     갤러리·리스트 보기 모두 6개 (사용자 확정). */
+  const PER = 6;
   const [page, setPage] = useState(1);
   const pages = Math.max(1, Math.ceil(visible.length / PER));
   const cur = Math.min(page, pages);      // 검색·보기 전환으로 줄면 마지막 장으로 당긴다
