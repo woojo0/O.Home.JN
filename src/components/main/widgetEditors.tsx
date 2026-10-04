@@ -7,6 +7,7 @@ import { KInput, KTextarea, KCheck, KStep, KDate } from '@/components/ui/Kit';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue, CropImg, CroppedBlobImg } from '@/components/ui/CropEditor';
 import { putBlob, useBlobUrl } from '@/lib/blobStore';
+import { newId } from '@/lib/postStore';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirmDelete } from '@/components/ui/Modal';
 import { normalizeInternalLink } from '@/lib/link';
@@ -62,7 +63,8 @@ export function TextSettingEditor({ conf }: { conf: WidgetConf }) {
 
 /* ---------- D-DAY — settings.items: {title, date, plusOne?}[] ---------- */
 // plusOne: 시작일을 1일로 세는 기념일 카운트 (+1 Day — 커플 기념일 등, 당일 = D+1)
-export interface DdaySetItem { title: string; date: string; plusOne?: boolean; text?: string }
+/** id: 편집 줄의 고정 키 (커플홈) — 예전 항목에는 없을 수 있어 편집기를 열 때 붙인다 */
+export interface DdaySetItem { id?: string; title: string; date: string; plusOne?: boolean; text?: string }
 /** 텍스트형 설정 (커플홈 사용자 요청) — mode 'text'면 패널 없이 제목(폰트1)+날짜 글씨(폰트2)만.
  *  format 고정: numStyle D+123 / 123일 · 자유: 항목마다 적은 문장의 [[Dday]] 자리에 날 수 */
 export interface DdayTextSettings {
@@ -87,6 +89,12 @@ export function DdayEditor({ conf }: { conf: WidgetConf }) {
     updateWidget(conf.id, { settings: { ...conf.settings, items: next } }, { persist: true });
   const setMeta = (patch: Record<string, unknown>) =>
     updateWidget(conf.id, { settings: { ...conf.settings, ...patch } }, { persist: true });
+  /* 줄마다 고정 키 (커플홈 사용자 제보 — 제목을 고칠 때마다 포커스가 날아가 한 글자씩만 입력됐다):
+     예전에는 키가 「제목|날짜」라 글자 하나 바꿀 때마다 줄이 새로 그려졌다. 예전 항목에는 id가 없으니 열 때 한 번 붙인다 */
+  useEffect(() => {
+    if (items.length && items.some(it => !it.id)) set(items.map(it => (it.id ? it : { ...it, id: newId() })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
   const tx = conf.settings as DdayTextSettings;
   const isText = tx.mode === 'text';
   const isFree = isText && tx.format === 'free';
@@ -97,7 +105,7 @@ export function DdayEditor({ conf }: { conf: WidgetConf }) {
     // 자유 형식은 제목이 선택사항 — 문장은 항목 줄에서 적는다
     if (!nt.trim() && !isFree) { toast('제목을 입력해 주세요'); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nd)) { toast('날짜를 YYYY-MM-DD 형식으로 입력해 주세요'); return; }
-    set([...items, { title: nt.trim(), date: nd, ...(isFree ? { text: '[[Dday]]일 째' } : {}) }]);
+    set([...items, { id: newId(), title: nt.trim(), date: nd, ...(isFree ? { text: '[[Dday]]일 째' } : {}) }]);
     setNt(''); setNd('');
   };
   const segBtn = (on: boolean, label: string, onClick: () => void) => (
@@ -138,7 +146,7 @@ export function DdayEditor({ conf }: { conf: WidgetConf }) {
       )}
       <DragList
         items={items}
-        keyOf={it => `${it.title}|${it.date}`}
+        keyOf={it => it.id ?? `${it.title}|${it.date}`}
         onReorder={set}
         render={(it, i) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px dashed var(--line)', width: '100%' }}>

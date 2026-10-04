@@ -239,7 +239,7 @@ export function LatestWidget() {
 }
 
 /* ---------- D-DAY (4.12 — 스케줄러 연동은 3차) ---------- */
-interface DdayItem { title: string; date: string; plusOne?: boolean; text?: string }
+interface DdayItem { id?: string; title: string; date: string; plusOne?: boolean; text?: string }
 /** count: 날 수 그 자체 (텍스트형 「123일」·[[Dday]] 치환용) — 지난 날은 D+n의 n, 남은 날은 D-n의 n, 당일 0(+1D면 1) */
 function ddayLabel(date: string, plusOne?: boolean): { label: string; passed: boolean; near: boolean; count: number } {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -283,7 +283,7 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
       <div className="dday-text" style={{ textAlign: align, cursor: isAdmin ? 'pointer' : undefined }}
         onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) setOpen(true); }}>
         {items.map((it, i) => (
-          <div className="dday-tx" key={`${it.title}|${it.date}|${i}`}>
+          <div className="dday-tx" key={it.id ?? `${it.date}|${i}`}>
             {it.title && (
               <div className="t" style={{
                 fontFamily: s.titleFontId ? familyOf(s.titleFontId) : undefined,
@@ -311,10 +311,10 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
     <div className="panel widget" style={{ cursor: isAdmin ? 'pointer' : undefined }}
       onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) setOpen(true); }}>
       <h4>D-DAY {isAdmin && <span className="more">관리 ›</span>}</h4>
-      {items.map(it => {
+      {items.map((it, i) => {
         const d = ddayLabel(it.date, it.plusOne);
         return (
-          <div className="dday-row" key={it.title}>
+          <div className="dday-row" key={it.id ?? `${it.title}|${i}`}>
             <span>{it.title}</span>
             <b className={d.near && !dColor ? 'd-red' : ''}
               style={{ fontFamily: familyOf(dFontId), color: dColor }}>{d.label}</b>
@@ -388,7 +388,11 @@ export function UpcomingWidget() {
   const canSee = list('sched').some(s => seeSec(s.id));
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  // 오늘 포함 이후 일정 — 매년 반복은 올해 날짜로 환산해 가장 가까운 3개
+  /* 오늘 포함 이후 일정 — 매년 반복은 다음 번 날짜로 환산해 가장 가까운 3개.
+     앞으로 90일 안의 것만 (커플홈 사용자 제보 — 올해 치가 막 지난 매년 일정이 내년 날짜로 끼어들어
+     「09.28」처럼 지난 일정이 맨 아래 붙은 것으로 보였다) */
+  const limit = new Date(today); limit.setDate(limit.getDate() + 90);
+  const limitStr = `${limit.getFullYear()}-${String(limit.getMonth() + 1).padStart(2, '0')}-${String(limit.getDate()).padStart(2, '0')}`;
   const upcoming = st.events
     .filter(e => seeSec(e.secId))
     .filter(e => isAdmin || e.visibility === 'public' || (e.visibility === 'member' && !!user))
@@ -400,7 +404,7 @@ export function UpcomingWidget() {
       }
       return { e, d };
     })
-    .filter(x => x.d >= todayStr)
+    .filter(x => x.d >= todayStr && x.d <= limitStr)
     .sort((a, b) => a.d.localeCompare(b.d))
     .slice(0, 3);
   if (!canSee) return null;   // 메뉴가 비공개면 위젯 자체를 띄우지 않는다 (v2.0)
