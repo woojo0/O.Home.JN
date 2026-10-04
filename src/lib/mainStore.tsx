@@ -10,7 +10,7 @@ import { getRawSetting, setSetting } from './settingStore';
 export type WidgetType =
   | 'banner' | 'member'                 // 고정 요소 (삭제 불가)
   | 'menu' | 'memo' | 'diary' | 'latest'
-  | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
+  | 'dday' | 'ddaytext' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'   // ddaytext: 단일(텍스트형) D-day — 여러 개
   | 'apply';   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · apply = 커미션 신청자 (v2.0)
 
 export interface WidgetConf {
@@ -47,7 +47,8 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   memo: { title: 'MEMO', desc: '관리자 메모 (클릭 시 관리 모달)' },
   diary: { title: 'DIARY', desc: '최근 일기 (무드 아이콘 · 비공개 미노출)' },
   latest: { title: 'LATEST', desc: '최신 그림 3장' },
-  dday: { title: 'D-DAY', desc: '디데이 목록' },
+  dday: { title: 'D-DAY', desc: '디데이 목록 — 리스트형 (하나만)' },
+  ddaytext: { title: 'D-DAY 텍스트', desc: '디데이 글씨만 — 단일형 (여러 개 추가 가능)' },
   todo: { title: 'TO-DO', desc: '관리자 투두 (방문자는 열람만)' },
   upcoming: { title: 'UPCOMING', desc: '다가오는 일정' },
   freetext: { title: '자유 텍스트', desc: '패널 없이 문구만' },
@@ -57,7 +58,7 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */
-export const MULTI_TYPES: WidgetType[] = ['freetext', 'deco', 'banner'];   // banner: v2.0 사용자 요청 — 슬라이드 배너 여러 개
+export const MULTI_TYPES: WidgetType[] = ['freetext', 'deco', 'banner', 'ddaytext'];   // banner: v2.0 사용자 요청 — 슬라이드 배너 여러 개 · ddaytext: 단일 D-day 여러 개
 
 /** 위젯 표시 이름 — 중복 추가 가능한 위젯이 2개 이상이면 번호를 붙여 구분 (v1.9) */
 export function widgetLabel(widgets: WidgetConf[], w: WidgetConf): string {
@@ -147,7 +148,9 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
         for (const w of parsed.widgets) {
           if ((w.type as string) === 'image') continue;
           if (!w.enabled && !w.fixed) { removed.add(w.id); continue; }
-          kept.push(w.enabled ? w : { ...w, enabled: true });
+          // D-day 텍스트형은 이제 별도 위젯(ddaytext) — 예전에 mode: 'text'로 바꿔 둔 D-day는 그쪽으로 옮긴다
+          const t = w.type === 'dday' && (w.settings as { mode?: string })?.mode === 'text' ? { ...w, type: 'ddaytext' as const } : w;
+          kept.push(t.enabled ? t : { ...t, enabled: true });
         }
         const ids = new Set(kept.map(w => w.id));
         // 삭제한 기본 위젯은 병합으로 되살리지 않음
@@ -249,7 +252,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
       const w: WidgetConf = {
         id, type, col, enabled: true, tx: 0, ty: 0,
         ax: colX[col], ay: maxY,
-        settings: type === 'freetext' ? { text: '자유 텍스트' } : {},
+        settings: type === 'freetext' ? { text: '자유 텍스트' } : type === 'ddaytext' ? { mode: 'text', items: [] } : {},
       };
       return { ...s, widgets: [...s.widgets, w], mobileOrder: [...s.mobileOrder, id] };
     });

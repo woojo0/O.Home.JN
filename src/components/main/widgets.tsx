@@ -275,13 +275,14 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
   const dColor = conf.settings.color as string | undefined;
   useEditEvent(conf.id, () => setOpen(true));   // 편집모드 우클릭 → 설정 (v1.9)
   const s = conf.settings as DdayTextSettings;
-  /* 텍스트형 (커플홈 사용자 요청) — 패널·리스트 줄 없이 글씨만: 제목(폰트1) + 날짜 글씨(폰트2).
-     고정 형식은 D+123 / 123일, 자유 형식은 적어 둔 문장(「사랑한지 [[Dday]]일 째」)의 [[Dday]] 자리에 날 수 */
-  if (s.mode === 'text') {
+  void editOn;
+  /* 텍스트형 = 별도 위젯 종류 ddaytext (여러 개 추가 가능) — 패널·리스트 줄 없이 글씨만: 제목(폰트1) + 날짜 글씨(폰트2).
+     고정 형식은 D+123 / 123일, 자유 형식은 적어 둔 문장(「사랑한지 [[Dday]]일 째」)의 [[Dday]] 자리에 날 수.
+     관리창은 편집모드 우클릭 → 설정으로만 연다 (사용자 요청 — 평소 클릭에 열리는 게 번거롭다) */
+  if (conf.type === 'ddaytext') {
     const align = s.align ?? 'center';
     return (
-      <div className="dday-text" style={{ textAlign: align, cursor: isAdmin ? 'pointer' : undefined }}
-        onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) setOpen(true); }}>
+      <div className="dday-text" style={{ textAlign: align }}>
         {items.map((it, i) => (
           <div className="dday-tx" key={it.id ?? `${it.date}|${i}`}>
             {it.title && (
@@ -298,7 +299,7 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
             }}>{ddayText(it, s.format ?? 'fixed', s.numStyle ?? 'dplus')}</div>
           </div>
         ))}
-        {items.length === 0 && <p className="hint">{isAdmin ? '등록된 D-day가 없습니다 — 클릭해서 추가' : ''}</p>}
+        {items.length === 0 && <p className="hint">{isAdmin ? '등록된 D-day가 없습니다 — 편집모드에서 우클릭 → 설정' : ''}</p>}
         <Modal open={open} onClose={() => setOpen(false)} title="D-day 관리"
           desc="추가 · 수정 · 삭제 · ⠿ 드래그로 순서 조정 — 환경설정 「위젯」에서도 관리 가능"
           actions={<button className="btn btn-dark" onClick={() => setOpen(false)}>CLOSE</button>}>
@@ -308,9 +309,8 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
     );
   }
   return (
-    <div className="panel widget" style={{ cursor: isAdmin ? 'pointer' : undefined }}
-      onClick={e => { if ((e.target as HTMLElement).closest('.modal-ov')) return; if (isAdmin && !editOn) setOpen(true); }}>
-      <h4>D-DAY {isAdmin && <span className="more">관리 ›</span>}</h4>
+    <div className="panel widget">
+      <h4>D-DAY</h4>
       {items.map((it, i) => {
         const d = ddayLabel(it.date, it.plusOne);
         return (
@@ -707,7 +707,8 @@ export function renderWidget(conf: WidgetConf) {
     case 'memo': return <MemoWidget conf={conf} />;
     case 'diary': return <DiaryWidget />;
     case 'latest': return <LatestWidget />;
-    case 'dday': return <DdayWidget conf={conf} />;
+    case 'dday':
+    case 'ddaytext': return <DdayWidget conf={conf} />;
     case 'todo': return <TodoWidget conf={conf} />;
     case 'upcoming': return <UpcomingWidget />;
     case 'freetext': return <FreeTextWidget conf={conf} />;

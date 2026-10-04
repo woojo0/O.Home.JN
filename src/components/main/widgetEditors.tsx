@@ -96,7 +96,7 @@ export function DdayEditor({ conf }: { conf: WidgetConf }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
   const tx = conf.settings as DdayTextSettings;
-  const isText = tx.mode === 'text';
+  const isText = conf.type === 'ddaytext';   // 표시 방식은 위젯 종류가 정한다 — 리스트형(dday) / 텍스트형(ddaytext)
   const isFree = isText && tx.format === 'free';
   const [nt, setNt] = useState('');
   const [nd, setNd] = useState('');
@@ -114,13 +114,9 @@ export function DdayEditor({ conf }: { conf: WidgetConf }) {
 
   return (
     <div>
-      {/* 표시 방식 (커플홈 사용자 요청) — 리스트형 / 텍스트형(글씨만) */}
+      {/* 표시 방식은 위젯 종류가 정한다 — 리스트형(D-DAY, 하나만) / 텍스트형(D-DAY 텍스트, 여러 개).
+          텍스트형에만 입력 형식·정렬 등 글씨 설정이 있다 */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-        <span className="cp-lb">표시</span>
-        <div className="mini-seg">
-          {segBtn(!isText, '리스트', () => setMeta({ mode: 'list' }))}
-          {segBtn(isText, '텍스트', () => setMeta({ mode: 'text' }))}
-        </div>
         {isText && (
           <>
             <span className="cp-lb">입력 형식</span>
