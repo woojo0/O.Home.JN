@@ -102,7 +102,7 @@ export default function TrpgDetailPage() {
   const [eOpen, setEOpen] = useState(false);
   const [e, setE] = useState({
     noText: '', title: '', catchphrase: '', writer: '', withText: '',
-    relId: 'none', date: '', visibility: 'public' as TrpgLog['visibility'], password: '',
+    relId: 'none', auId: 'base', date: '', visibility: 'public' as TrpgLog['visibility'], password: '',
     listHidden: false,   // 목록 표시 여부 (v2.0 — 접근권한과 별개)
   });
   // 본문 교체
@@ -153,6 +153,7 @@ export default function TrpgDetailPage() {
       title: e.title.trim(), catchphrase: e.catchphrase.trim() || undefined,
       writer: e.writer.trim(), withText: e.withText.trim(),
       relId: e.relId === 'none' ? undefined : e.relId,
+      auId: e.relId !== 'none' && e.auId !== 'base' ? e.auId : undefined,
       date: e.date || undefined,
       visibility: e.visibility, password: e.password.trim() || undefined,
       listHidden: e.listHidden,
@@ -328,7 +329,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
           {isAdmin && <button className="btn btn-dark" onClick={() => {
             setE({
               noText: l.noText ?? '', title: l.title, catchphrase: l.catchphrase ?? '', writer: l.writer,
-              withText: l.withText, relId: l.relId ?? 'none', date: l.date ?? '',
+              withText: l.withText, relId: l.relId ?? 'none', auId: l.auId ?? 'base', date: l.date ?? '',
               visibility: l.visibility, password: l.password ?? '', listHidden: !!l.listHidden,
             });
             // 본문·썸네일 교체 상태 초기화 (기본: 현재 것 유지)
@@ -429,8 +430,14 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
             <KInput placeholder="같이 간 사람 (선택)" value={e.withText} onChange={ev => setE(s => ({ ...s, withText: ev.target.value }))} />
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <KSelect minWidth={140} value={e.relId} onChange={v => setE(s => ({ ...s, relId: v }))}
+            <KSelect minWidth={140} value={e.relId} onChange={v => setE(s => ({ ...s, relId: v, auId: 'base' }))}
               options={[{ value: 'none', label: '자관 연동 없음' }, ...rels.map(r => ({ value: r.id, label: r.name }))]} />
+            {/* 고른 자관에 AU가 있으면 어느 AU의 로그인지 — 자관 페이지에서 AU별로 따로 보인다 */}
+            {e.relId !== 'none' && (rels.find(r => r.id === e.relId)?.aus ?? []).some(a => a.id !== 'base') && (
+              <KSelect minWidth={120} value={e.auId} onChange={v => setE(s => ({ ...s, auId: v }))}
+                options={[{ value: 'base', label: '원본' },
+                  ...(rels.find(r => r.id === e.relId)?.aus ?? []).filter(a => a.id !== 'base').map(a => ({ value: a.id, label: a.label }))]} />
+            )}
             <KDate value={e.date} onChange={v => setE(s => ({ ...s, date: v }))} style={{ flex: 1 }} />
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

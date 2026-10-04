@@ -95,6 +95,7 @@ function PostToTrpg({ room, msgs, chars, sub, time }: {
         writer: '',
         withText: speakers.map(c => c.name).join(' · '),
         relId: room.relId,                  // 자관 기반 방이면 자관 페이지의 로그 목록에도 뜬다
+        auId: room.auId,                    // 그 방의 AU 그대로 — 자관 페이지에서 같은 AU의 로그 칸에만 뜬다
         date: rpLogLastDate(msgs),
         ph: 'cool',
         visibility: vis,

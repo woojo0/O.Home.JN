@@ -526,13 +526,15 @@ export default function RelDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rel, auId, qaQuery],
   );
-  const relLogs = useMemo(() => logs.filter(l => l.relId === rel?.id), [logs, rel]);
+  // 역극·로그는 **보고 있는 AU의 것만** (사용자 요청 — AU 역극이 원본 페이지에도 떠서 뒤섞였다).
+  // auId가 없는 방·로그는 원본(base) 것이다
+  const relLogs = useMemo(() => logs.filter(l => l.relId === rel?.id && (l.auId ?? 'base') === auId), [logs, rel, auId]);
   // 역극 연동 (4.9) — 내가 참여한 방 + 공개 전환된 완결 방만 (비참여 방은 존재 자체 비노출).
   // 참여자는 역극 페이지와 같은 계산(rpMemberIds)으로 — 자관 기반 방은 저장된 memberIds에 개설자만 있어서
   // 상대 오너에게는 자기가 참여한 역극이 이 목록에 뜨지 않았다 (커플홈 작업 중 발견)
-  const relRooms = useMemo(() => rooms.filter(rm => rm.relId === rel?.id
+  const relRooms = useMemo(() => rooms.filter(rm => rm.relId === rel?.id && (rm.auId ?? 'base') === auId
     && ((user && rpMemberIds(rm, rels, chars).includes(user.id)) || (rm.status === 'done' && rm.isPublic))),
-    [rooms, rel, user, rels, chars]);
+    [rooms, rel, auId, user, rels, chars]);
 
   if (!loaded) return <section className="page" />;
   if (!rel || (rel.visibility === 'private' && !isAdmin) || (rel.visibility === 'member' && !user)) {
