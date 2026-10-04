@@ -201,7 +201,25 @@ a{color:inherit;text-decoration:none}
 .bgm.folded .title,.bgm.folded .ctrl,.bgm.folded .vol,.bgm.folded .fold-btn,.bgm.folded .bgm-list{display:none}
 .bgm-list{position:absolute;bottom:calc(100% + 10px);right:0;min-width:200px;background:var(--bgm-bg);border:1px solid var(--line-dark);border-radius:14px;padding:8px;display:none;box-shadow:var(--sh-dd)}
 /* 왼쪽 배치일 때 목록 팝업도 왼쪽 기준으로 — 화면 밖으로 밀리지 않게 */
+.bgm.bgm-left{right:auto;left:20px}
 .bgm.bgm-left .bgm-list{right:auto;left:0}
+/* 플레이리스트 고르기 (커플홈 사용자 요청) — 곡 목록 팝업 위의 알약 탭 */
+.bgm-list .pl{display:flex;flex-wrap:wrap;gap:4px;padding:0 6px 8px;margin-bottom:6px;border-bottom:1px dashed var(--line-dark)}
+.bgm-list .pl button{font-size:calc(9.5px*var(--fs,1));letter-spacing:.06em;padding:3px 9px;border-radius:20px;color:var(--bgm-ic);border:1px solid var(--line-dark);transition:.13s;white-space:nowrap}
+.bgm-list .pl button:hover{color:var(--bgm-fg)}
+.bgm-list .pl button.on{color:var(--bgm-fg);background:rgba(255,255,255,.1)}
+.bgm-list .pl button:disabled{opacity:.4;cursor:default}
+/* PC에서도 아래에 붙는 바 (커플홈 사용자 요청 — 환경설정 BGM 「PC에서도 하단 바」): 모바일 바와 같은 모양 */
+.bgm.bgm-dock,.bgm.bgm-dock.bgm-left{left:0;right:0;bottom:0;border-radius:0;border-left:none;border-right:none;border-bottom:none;padding:4px 12px;gap:10px}
+.bgm.bgm-dock .vol,.bgm.bgm-dock .fold-btn,.bgm.bgm-dock .disc{display:none}
+.bgm.bgm-dock .title{flex:1;max-width:none}
+.bgm.bgm-dock .title .mq{max-width:none}
+.bgm.bgm-dock .ctrl{margin-left:auto}
+.bgm.bgm-dock.folded{padding:4px 12px;gap:10px;cursor:default}
+.bgm.bgm-dock.folded .title{display:block}
+.bgm.bgm-dock.folded .ctrl{display:flex}
+.bgm.bgm-dock .ctrl button{width:24px;height:24px}
+.bgm.bgm-dock .bgm-list,.bgm.bgm-dock.bgm-left .bgm-list{right:12px;left:auto}
 .bgm-list.on{display:block;animation:fade .18s}
 .bgm-list .h{font-size:calc(9px*var(--fs,1));letter-spacing:.22em;color:var(--bgm-ic);padding:4px 9px 7px}
 .bgm-list .it{padding:7px 9px;border-radius:9px;cursor:var(--cur-pointer,pointer);transition:.13s}

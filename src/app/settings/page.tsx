@@ -47,7 +47,7 @@ import { Mood, MOOD_SEED, moodTint, useDiarySettings, DiaryCat } from '@/lib/dia
 import {
   TextSettingEditor, DdayEditor, TodoEditor, BannerEditor, DecoEditor,
 } from '@/components/main/widgetEditors';
-import { useBgm, BgmTrack, parseVideoId } from '@/lib/bgmStore';
+import { useBgm, BgmTrack, parseVideoId, MAIN_LIST } from '@/lib/bgmStore';
 import { useFonts, fontCssUrl, FontDef, FontRole, ROLE_LABEL, FOLLOW_MENU, FOLLOW_TITLE } from '@/lib/fontStore';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc, getPageText, setPageText } from '@/components/ui/PageText';
@@ -3161,15 +3161,22 @@ function BgmTrackRow({ t, onPatch, onDelete }: {
 
 /** BGM 탭 (5.2 v1.9) — 곡 목록 등록(미니 플레이어 리스트에 노출) + 재생 설정 */
 function BgmPane() {
-  const { state, setTracks, addTrack, removeTrack, setSettings } = useBgm();
+  const { state, lists, setTracks, addTrack, removeTrack, addList, renameList, removeList, setSettings } = useBgm();
   const toast = useToast();
   const del = useConfirmDelete();
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [url, setUrl] = useState('');
+  /* 플레이리스트 여러 개 (커플홈 사용자 요청) — 고른 목록의 곡만 아래에서 다룬다 */
+  const [cur, setCur] = useState(MAIN_LIST);
+  const curList = lists.find(l => l.id === cur) ?? lists[0];
+  const [newName, setNewName] = useState('');
+  const [nameDraft, setNameDraft] = useState('');
+  useEffect(() => { setNameDraft(curList?.name ?? ''); }, [cur, curList?.name]);
+  const commitName = () => { if (nameDraft.trim() && nameDraft.trim() !== curList?.name) renameList(cur, nameDraft); };
 
   const add = () => {
-    if (addTrack(title, desc, url)) {
+    if (addTrack(title, desc, url, cur)) {
       setTitle(''); setDesc(''); setUrl('');
       toast('곡이 추가되었습니다');
     } else {
@@ -3180,18 +3187,48 @@ function BgmPane() {
   return (
     <div className="set-sec">
       <h3>BGM</h3>
-      <div className="d">유튜브 곡 목록 관리 — 미니 플레이어 리스트에 노출 · 화면은 숨기고 소리만 재생</div>
+      <div className="d">유튜브 곡 목록 관리 — 미니 플레이어 리스트에 노출 · 화면은 숨기고 소리만 재생 · 플레이리스트를 여러 개 만들면 플레이어의 곡 목록에서 고를 수 있습니다</div>
+
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+        <div className="mini-seg" style={{ flexWrap: 'wrap' }}>
+          {lists.map(l => (
+            <button key={l.id} className={l.id === cur ? 'on' : ''} onClick={() => setCur(l.id)}>
+              {l.name} <small style={{ opacity: .6 }}>{l.tracks.length}</small>
+            </button>
+          ))}
+        </div>
+        <KInput placeholder="새 플레이리스트 이름" value={newName} onChange={e => setNewName(e.target.value)} style={{ maxWidth: 160 }}
+          onKeyDown={e => { if (e.key === 'Enter') { const id = addList(newName); if (id) { setCur(id); setNewName(''); } } }} />
+        <button className="btn btn-ghost" style={{ whiteSpace: 'nowrap' }}
+          onClick={() => {
+            const id = addList(newName);
+            if (id) { setCur(id); setNewName(''); toast('플레이리스트를 만들었습니다 — 아래에서 곡을 넣어 주세요'); }
+            else toast('플레이리스트 이름을 입력해 주세요');
+          }}>＋ 플레이리스트</button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
+        <span className="cp-lb">이름</span>
+        <KInput value={nameDraft} onChange={e => setNameDraft(e.target.value)} onBlur={commitName}
+          onKeyDown={e => { if (e.key === 'Enter') commitName(); }} style={{ maxWidth: 160 }} />
+        {cur !== MAIN_LIST && (
+          <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 10.5 }}
+            onClick={() => del.ask(`「${curList?.name}」 플레이리스트를 삭제하시겠습니까? (곡 ${curList?.tracks.length ?? 0}개)`, () => { removeList(cur); setCur(MAIN_LIST); })}>
+            DELETE
+          </button>
+        )}
+      </div>
 
       <DragList
-        items={state.tracks}
+        items={curList?.tracks ?? []}
         keyOf={t => t.id}
-        onReorder={setTracks}
+        onReorder={next => setTracks(next, cur)}
         render={t => (
           <BgmTrackRow t={t}
-            onPatch={p => setTracks(state.tracks.map(x => (x.id === t.id ? { ...x, ...p } : x)))}
-            onDelete={() => del.ask(`곡 「${t.title}」을 삭제하시겠습니까?`, () => removeTrack(t.id))} />
+            onPatch={p => setTracks((curList?.tracks ?? []).map(x => (x.id === t.id ? { ...x, ...p } : x)), cur)}
+            onDelete={() => del.ask(`곡 「${t.title}」을 삭제하시겠습니까?`, () => removeTrack(t.id, cur))} />
         )}
       />
+      {(curList?.tracks.length ?? 0) === 0 && <p className="hint">이 플레이리스트에 곡이 없습니다 — 아래에서 추가</p>}
       {del.element}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -3212,6 +3249,19 @@ function BgmPane() {
           <button className={state.settings.position === 'bl' ? 'on' : ''} onClick={() => setSettings({ position: 'bl' })}>왼쪽 아래</button>
         </div>
       </div>
+      {/* PC에서도 하단 바 (커플홈 사용자 요청) — 모바일 바와 같은 모양, 접기·볼륨 생략 */}
+      <div className="set-row">
+        <div className="l"><b>PC에서도 하단 바</b><small>모바일처럼 화면 아래에 붙는 슬림 바로 (레코드판·볼륨·접기 없음)</small></div>
+        <KToggle checked={!!state.settings.dock} onChange={v => setSettings({ dock: v })} />
+      </div>
+      {lists.length > 1 && (
+        <div className="set-row">
+          <div className="l"><b>처음 재생할 플레이리스트</b><small>방문자가 플레이어에서 바꾼 선택은 그 브라우저에만 기억됩니다</small></div>
+          <KSelect minWidth={150} value={lists.some(l => l.id === state.settings.defList) ? state.settings.defList! : MAIN_LIST}
+            onChange={v => setSettings({ defList: v === MAIN_LIST ? undefined : v })}
+            options={lists.map(l => ({ value: l.id, label: l.name }))} />
+        </div>
+      )}
       <div className="set-row">
         <div className="l"><b>셔플</b></div>
         <KToggle checked={state.settings.shuffle} onChange={v => setSettings({ shuffle: v })} />
