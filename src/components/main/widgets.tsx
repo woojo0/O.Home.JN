@@ -389,9 +389,9 @@ export function UpcomingWidget() {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   /* 오늘 포함 이후 일정 — 매년 반복은 다음 번 날짜로 환산해 가장 가까운 3개.
-     앞으로 90일 안의 것만 (커플홈 사용자 제보 — 올해 치가 막 지난 매년 일정이 내년 날짜로 끼어들어
+     앞으로 30일 안의 것만 (커플홈 사용자 제보 — 올해 치가 막 지난 매년 일정이 내년 날짜로 끼어들어
      「09.28」처럼 지난 일정이 맨 아래 붙은 것으로 보였다) */
-  const limit = new Date(today); limit.setDate(limit.getDate() + 90);
+  const limit = new Date(today); limit.setDate(limit.getDate() + 30);
   const limitStr = `${limit.getFullYear()}-${String(limit.getMonth() + 1).padStart(2, '0')}-${String(limit.getDate()).padStart(2, '0')}`;
   const upcoming = st.events
     .filter(e => seeSec(e.secId))

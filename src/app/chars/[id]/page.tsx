@@ -20,6 +20,8 @@ import { InkFit } from '@/components/ui/InkFit';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useSectionTitle } from '@/lib/sectionStore';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { HtmlBody } from '@/components/ui/HtmlBody';
+import { Lightbox } from '@/components/ui/Lightbox';
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +35,7 @@ function CharDetailInner() {
   const params = useSearchParams();
   const [tab, setTab] = useState('basic');
   const [artIdx, setArtIdx] = useState(0);
+  const [lbOpen, setLbOpen] = useState(false);   // 대표 아트 전체 보기 (커플홈 사용자 요청 — 갤러리와 같은 라이트박스)
   const [delAsk, setDelAsk] = useState(false);   // 캐릭터 삭제 확인
   const infoRef = useRef<HTMLDivElement>(null);
 
@@ -227,7 +230,7 @@ function CharDetailInner() {
           )}
         </div>
 
-        {/* 중앙 아트 — 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
+        {/* 중앙 아트 — 스티키 · 클릭하면 전체 보기(라이트박스), 추가 아트는 아래 점을 눌러 넘겨보기 */}
         {(() => {
           const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
           if (arts.length === 0 && !eff.artUrl) {
@@ -236,8 +239,10 @@ function CharDetailInner() {
           const cur = Math.min(artIdx, arts.length - 1);
           return (
             <div className="profile-center" ref={artBoxRef}
-              style={{ cursor: arts.length > 1 ? 'pointer' : undefined }}
-              onClick={() => { if (arts.length > 1) setArtIdx(i => (i + 1) % arts.length); }}
+              style={{ cursor: (arts[cur] ?? eff.artUrl) ? 'zoom-in' : undefined }}
+              /* 클릭 → 전체 보기 (커플홈 사용자 요청 — 갤러리와 같은 방식). 라이트박스는 아래(섹션 끝)에서 띄운다 —
+                 이 div 안에서 띄우면 배경 클릭(닫기)이 React 트리를 타고 여기로 올라와 다시 열린다 */
+              onClick={() => { if (arts[cur] ?? eff.artUrl) setLbOpen(true); }}
               /* 대표 아트 우클릭 → 이 화면에 보일 위치 조정 (관리자, v2.0 사용자 확정) */
               onContextMenu={e => {
                 if (!(isAdmin || charGrant(ch, user?.id) === 'edit') || cur !== 0) return;
@@ -254,8 +259,11 @@ function CharDetailInner() {
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                   {arts.map((_, i) => (
-                    <i key={i} style={{
-                      width: i === cur ? 16 : 6, height: 6, borderRadius: 4,
+                    /* 점을 눌러 아트 바꾸기 — 이미지 클릭은 전체 보기로 넘어갔으므로 (커플홈).
+                       보이는 점은 작게 두고 누르는 자리만 padding으로 키운다 */
+                    <i key={i} onClick={e => { e.stopPropagation(); setArtIdx(i); }} style={{
+                      width: i === cur ? 16 : 6, height: 6, borderRadius: 4, cursor: 'pointer',
+                      padding: 4, boxSizing: 'content-box', backgroundClip: 'content-box',
                       background: i === cur ? '#fff' : 'rgba(255,255,255,.45)', transition: '.2s',
                     }} />
                   ))}
@@ -308,13 +316,14 @@ function CharDetailInner() {
                   </>
                 )}
               </dl>
-              <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
+              {/* 본문 이미지 클릭 → 전체 보기 (커플홈 사용자 요청) — 게시판 본문과 같은 HtmlBody */}
+              <HtmlBody className="prose" html={basicHtml} />
             </>
           ) : (
             <>
               <h3 className="tab-tt">{curTab?.title}</h3>
               {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
-              <div className="prose" dangerouslySetInnerHTML={{ __html: tabHtml }} />
+              <HtmlBody className="prose" html={tabHtml} />
             </>
           )}
         </div>
@@ -334,6 +343,14 @@ function CharDetailInner() {
         </div>,
         document.body,
       )}
+      {/* 대표 아트 전체 보기 — 등록된 아트 전부를 ‹ › 로 넘겨 본다 (커플홈 사용자 요청) */}
+      {lbOpen && eff && (() => {
+        const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
+        const srcs = arts.length ? arts : (eff.artUrl ? [eff.artUrl] : []);
+        return srcs.length
+          ? <Lightbox srcs={srcs} index={Math.min(artIdx, srcs.length - 1)} onClose={() => setLbOpen(false)} />
+          : null;
+      })()}
       {artCropOpen && (
         <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrop}
           onClose={() => setArtCropOpen(null)}
