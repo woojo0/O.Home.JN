@@ -18,6 +18,14 @@ import { useToast } from '@/components/ui/Toast';
 
 interface MemberRow { id: string; nickname: string; role: 'admin' | 'member'; homeId?: string }
 
+/** 오류 문구 — 권한 거부는 거의 늘 「새 규칙(v2.1)을 아직 게시하지 않음」이라 그 길을 바로 알려 준다 */
+const why = (e: unknown) => {
+  const m = (e as { message?: string })?.message ?? '';
+  return /permission|insufficient/i.test(m)
+    ? '권한이 없습니다 — Firebase 콘솔 → Firestore Database → 규칙에 저장소의 firebase/firestore.rules(v2.1) 내용을 붙여넣고 [게시]해 주세요. 이전 규칙에는 자관(homes) 권한이 없습니다.'
+    : m;
+};
+
 export function HomeList() {
   const { user, logout } = useAuth();
   const toast = useToast();
@@ -43,7 +51,7 @@ export function HomeList() {
       setHomes(hs);
       setMembers(ms.map(m => ({ id: m.id, nickname: m.nickname, role: m.role, homeId: m.homeId })));
     } catch (e) {
-      toast(`자관 목록을 받지 못했습니다 — ${(e as { message?: string })?.message ?? ''}`);
+      toast(`자관 목록을 받지 못했습니다 — ${why(e)}`);
       setHomes([]);
     }
   };
@@ -64,7 +72,7 @@ export function HomeList() {
     let n = 0;
     for (const id of ids) {
       try { await be.setMemberHome(id, homeId); n++; }
-      catch (e) { toast(`${members.find(m => m.id === id)?.nickname ?? id} 연결 실패 — ${(e as { message?: string })?.message ?? ''}`); }
+      catch (e) { toast(`${members.find(m => m.id === id)?.nickname ?? id} 연결 실패 — ${why(e)}`); }
     }
     return n;
   };
@@ -85,7 +93,7 @@ export function HomeList() {
       await load();
       toast(n ? `자관을 만들고 회원 ${n}명을 연결했습니다` : '자관을 만들었습니다 — 가입코드를 회원에게 알려 주세요');
     } catch (e) {
-      toast(`만들지 못했습니다 — ${(e as { message?: string })?.message ?? ''}`);
+      toast(`만들지 못했습니다 — ${why(e)}`);
     }
     setBusy(false);
   };
@@ -105,7 +113,7 @@ export function HomeList() {
       await load();
       toast(n ? `저장하고 회원 ${n}명을 연결했습니다` : '저장했습니다');
     } catch (e) {
-      toast(`저장하지 못했습니다 — ${(e as { message?: string })?.message ?? ''}`);
+      toast(`저장하지 못했습니다 — ${why(e)}`);
     }
     setBusy(false);
   };
@@ -121,7 +129,7 @@ export function HomeList() {
         await load();
         toast('자관을 지웠습니다');
       } catch (e) {
-        toast(`지우지 못했습니다 — ${(e as { message?: string })?.message ?? ''}`);
+        toast(`지우지 못했습니다 — ${why(e)}`);
       }
       setBusy(false);
     }, <>
@@ -159,15 +167,13 @@ export function HomeList() {
     <div className="setup-wrap">
       <div className="panel setup-box wide" style={{ margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <h1 style={{ fontFamily: 'var(--serif-base)', fontSize: 22, letterSpacing: '.25em', margin: 0, color: 'var(--ink)' }}>자관 리스트</h1>
+          <h1 style={{ fontFamily: 'var(--serif-base)', fontSize: 22, letterSpacing: '.25em', margin: 0, color: 'var(--ink)' }}>Relation List</h1>
           <span style={{ fontSize: 12, color: 'var(--faint)' }}>
             {user?.nickname} · 총관리자
             <button className="btn btn-ghost" style={{ marginLeft: 10, padding: '3px 10px', fontSize: 11 }} onClick={() => logout()}>로그아웃</button>
           </span>
         </div>
-        <p className="d" style={{ margin: '6px 0 18px' }}>
-          자관 하나가 홈 하나입니다. 자관마다 다른 가입코드를 가지며, 그 코드로 가입한 회원은 로그인할 때 바로 그 자관으로 갑니다.
-        </p>
+        <div style={{ height: 18 }} />
 
         {homes === null && <p className="hint">불러오는 중…</p>}
         {homes && homes.length === 0 && (
