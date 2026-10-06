@@ -293,6 +293,18 @@ export interface RelAuMember {
 
 /** 이 AU에서 이 멤버를 어떻게 보여 줄지 — AU에 정해 둔 값이 있으면 그것, 없으면 자관 기본.
  *  base(원본) AU이거나 정해 둔 게 없으면 자관 멤버를 그대로 돌려준다. */
+/** 자관 안에서 쓰는 1:1 얼굴칸 크롭 (v2.1) — 자관 페이지 우클릭 「썸네일 위치 조정」으로 잡은 값.
+ *  AU에 따로 정한 값 > 자관 기본(멤버) > 캐릭터의 3:4 썸네일 크롭. 역극 등 자관 밖에서 같은 얼굴칸을
+ *  그릴 때도 이 함수로 — 예전엔 캐릭터 크롭만 봐서 자관에서 맞춘 위치가 역극에서는 안 먹었다 */
+export function relFaceCrop(
+  rel: Relation | undefined, auId: string | undefined, char: Character,
+): import('@/components/ui/CropEditor').CropValue | undefined {
+  if (!rel) return char.thumbCrop;
+  const m = rel.members.find(x => x.charId === char.id);
+  const au = auId && auId !== 'base' ? rel.aus.find(a => a.id === auId) : undefined;
+  return au?.mset?.[char.id]?.faceCrop ?? m?.faceCrop ?? char.thumbCrop;
+}
+
 export function auMember(m: RelMember, au?: RelAu): RelMember {
   const o = au?.mset?.[m.charId];
   const out = { ...m };

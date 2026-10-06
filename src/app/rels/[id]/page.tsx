@@ -13,7 +13,7 @@ import {
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
-  findByKey, charPath, relPath, openableRels, relMenuHref, auParamOf,
+  findByKey, charPath, relPath, openableRels, relMenuHref, auParamOf, relFaceCrop,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
 import { putBlob } from '@/lib/blobStore';
@@ -824,10 +824,10 @@ export default function RelDetailPage() {
           ? { ...a, mset: { ...a.mset, [cid]: { ...a.mset?.[cid], faceCrop: c } } }
           : a)),
       });
-      return;
+    } else {
+      updateRel({ members: rel.members.map(m => (m.charId === cid ? { ...m, faceCrop: c } : m)) });
     }
-    updateRel({ members: rel.members.map(m => (m.charId === cid ? { ...m, faceCrop: c } : m)) });
-    setFaceEdit(null);
+    setFaceEdit(null);   // AU 쪽도 닫는다 (사용자 제보 — AU에서 SAVE를 눌러도 창이 안 닫혔다)
   };
 
   return (
@@ -1075,7 +1075,7 @@ export default function RelDetailPage() {
                   onClick={() => router.push(charHref(m.charId))}>
                   <div className={`face ph ${c.thumbClass}`} style={phStyle([c.color])}>
                     {!unreg && (c.arts?.[0] ?? c.thumbId) && (
-                      <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass} phStyle={phStyle([c.color])} />
+                      <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={relFaceCrop(rel, au?.id, c)} ph={c.thumbClass} phStyle={phStyle([c.color])} />
                     )}
                   </div>
                   <div className="nm">
