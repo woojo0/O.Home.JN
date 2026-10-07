@@ -1027,8 +1027,14 @@ export default function RelDetailPage() {
               }}>
               {auArts.length > 0 ? (
                 <>
-                  {/* 잡아 둔 위치가 있으면 그대로 (v2.0) — 없으면 예전처럼 통째로 */}
-                  <CroppedBlobImg fileRef={auArts[Math.min(artIdx, auArts.length - 1)]} crop={rel.artCrops?.[curArt]} ph="" label="MAIN ILLUST" />
+                  {/* 잡아 둔 위치가 있으면 그대로 (v2.0) — 없으면 예전처럼 통째로.
+                      슬라이드는 전부 겹쳐 두고 투명도로만 바꾼다 (사용자 제보 — 넘길 때마다 자리표시자가
+                      먼저 뜨고 그림이 나중에 올라오던 것). 한 번 받은 그림은 그대로 남아 즉시 전환된다 */}
+                  {auArts.map((ref, i) => (
+                    <div key={ref} style={{ position: 'absolute', inset: 0, opacity: i === Math.min(artIdx, auArts.length - 1) ? 1 : 0, transition: 'opacity .25s' }}>
+                      <CroppedBlobImg fileRef={ref} crop={rel.artCrops?.[ref]} ph="" label="MAIN ILLUST" />
+                    </div>
+                  ))}
                   {auArts.length > 1 && (
                     <div style={{ position: 'absolute', left: 0, right: 0, bottom: 44, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                       {auArts.map((_, i) => (
@@ -1120,7 +1126,12 @@ export default function RelDetailPage() {
             }}>
             {auArts.length > 0 ? (
               <>
-                <CroppedBlobImg fileRef={auArts[Math.min(artIdx, auArts.length - 1)]} crop={rel.artCrops?.[curArt]} ph="" label="GROUP ILLUST" />
+                {/* 슬라이드 전부 겹쳐 두고 투명도로만 전환 — 위 MAIN ILLUST와 같은 이유 */}
+                {auArts.map((ref, i) => (
+                  <div key={ref} style={{ position: 'absolute', inset: 0, opacity: i === Math.min(artIdx, auArts.length - 1) ? 1 : 0, transition: 'opacity .25s' }}>
+                    <CroppedBlobImg fileRef={ref} crop={rel.artCrops?.[ref]} ph="" label="GROUP ILLUST" />
+                  </div>
+                ))}
                 {auArts.length > 1 && (
                   <div style={{ position: 'absolute', left: 0, right: 0, bottom: 14, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                     {auArts.map((_, i) => (
