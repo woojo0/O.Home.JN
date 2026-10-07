@@ -89,6 +89,8 @@ export default function RpPage() {
   // 발화자 선택 — 관리자는 기반 자관 멤버 전부(+자유 개설이면 자캐 전부),
   // 회원은 권한(grants — 역극 플레이/편집)이 부여된 캐릭터만 (3차 회원-캐릭터 연결, v1.9)
   const rel = rels.find(r => r.id === sel?.relId);
+  // 자관에서 잡은 1:1 얼굴 위치 — 로그 모달(프로필 사진 옵션)에도 같은 값을 넘긴다
+  const faceOf = (c?: Character) => (c ? relFaceCrop(rel, sel?.auId, c) : undefined);
   /* 이 방이 어느 AU로 노는지 (v2.0 사용자 요청) — 방 안에서 쓰는 캐릭터를 통째로
      그 AU 프로필로 갈아 끼운다. 발화자 선택·말풍선·방 소제목이 모두 이 목록을 보므로
      한 곳만 바꾸면 전부 따라온다. AU가 없으면 원래 목록 그대로다(참조도 같다).
