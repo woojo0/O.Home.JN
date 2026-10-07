@@ -19,6 +19,7 @@ import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 import { RpLogModal } from '@/components/rp/RpLogModal';
+import { rpLogHtml, openLogWindow } from '@/lib/rpLog';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { putBlob, BlobImg } from '@/lib/blobStore';
 
@@ -151,6 +152,15 @@ export default function RpPage() {
   const onMsgsScroll = () => {
     const el = msgsRef.current;
     if (el && hiddenCount > 0 && el.scrollTop < 30 && keepScroll.current == null) loadMore();
+  };
+  // 메신저 모양에서 오른쪽(파란 말풍선)에 둘 캐릭터 — 보는 사람 기준 (내 권한 캐릭터, 관리자는 자캐)
+  const rightIds = user ? rpChars.filter(c => !!charGrant(c, user.id) || (!!c.own && isAdmin)).map(c => c.id) : [];
+  /* SHOW ALL (커플홈 사용자 요청) — 참여자 누구나, 관리자가 아니어도·모바일(머리줄 숨김)에서도 대화 전부를 새 탭 한 장으로.
+     방의 모양(대본/메신저) 그대로, 사진 없이 */
+  const showAll = () => {
+    if (!sel) return;
+    const style = sel.style === 'imsg' ? 'imsg' : 'script';
+    openLogWindow(sel.title, rpLogHtml({ title: sel.title, sub: roomLabel(sel) }, allMsgs, rpChars, { time: false, style, rightIds }));
   };
 
   const [text, setText] = useState('');
@@ -499,9 +509,14 @@ export default function RpPage() {
               {/* 메시지 영역을 감싸는 틀 — 「입력 중」 줄을 이 안에 겹쳐 띄워 영역 높이가 안 바뀌게 (스크롤 덜컹 방지) */}
               <div className="rp-msgs-wrap">
               <div className={`rp-msgs${imsg ? ' imsg' : ''}`} ref={msgsRef} onScroll={onMsgsScroll}>
-                {/* 잘라 둔 이전 대화 (커플홈) — 맨 위로 올려도 이어진다 */}
-                {hiddenCount > 0 && (
-                  <button className="btn btn-ghost rp-more" onClick={loadMore}>이전 대화 더보기 ({hiddenCount})</button>
+                {/* 잘라 둔 이전 대화 더보기 + SHOW ALL(전체를 새 탭 한 장으로) — 참여자 누구나 (커플홈) */}
+                {allMsgs.length > 0 && (
+                  <div className="rp-topbtns">
+                    {hiddenCount > 0 && (
+                      <button className="btn btn-ghost rp-more" onClick={loadMore}>이전 대화 더보기 ({hiddenCount})</button>
+                    )}
+                    <button className="btn btn-ghost rp-more" onClick={showAll}>SHOW ALL ↗</button>
+                  </div>
                 )}
                 {visibleMsgs.map((m, mi, arr) => {
                   const mine = m.authorId === user.id;
@@ -825,7 +840,7 @@ export default function RpPage() {
       {logOpen && sel && (
         <RpLogModal room={sel} msgs={msgsOf(sel)} chars={rpChars} sub={roomLabel(sel)}
           isAdmin={isAdmin} onClose={() => setLogOpen(false)}
-          rightIds={user ? rpChars.filter(c => !!charGrant(c, user.id) || (!!c.own && isAdmin)).map(c => c.id) : []}
+          rightIds={rightIds}
           faceInfo={Object.fromEntries(rpChars.map(c => [c.id, { ref: c.thumbId, crop: faceOf(c) }]))} />
       )}
 
