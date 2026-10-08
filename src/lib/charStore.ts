@@ -305,6 +305,22 @@ export function relFaceCrop(
   return au?.mset?.[char.id]?.faceCrop ?? m?.faceCrop ?? char.thumbCrop;
 }
 
+/** lounell 쪽 이름의 같은 기능 (이식 호환) — relId를 주면 그 자관, 없으면 캐릭터가 속한 첫 자관 ·
+ *  auKey(「자관id:AU id」)를 주면 그 AU에서 따로 잡은 값부터 본다. 결과는 relFaceCrop과 같다 */
+export function faceCropOf(
+  c: Character | undefined, rels: Relation[], opt?: { relId?: string; auKey?: string },
+): import('@/components/ui/CropEditor').CropValue | undefined {
+  if (!c) return undefined;
+  const rel = (opt?.relId ? rels.find(r => r.id === opt.relId) : undefined)
+    ?? rels.find(r => r.members.some(m => m.charId === c.id));
+  let auId: string | undefined;
+  if (rel && opt?.auKey) {
+    const i = opt.auKey.indexOf(':');
+    if (opt.auKey.slice(0, i) === rel.id) auId = opt.auKey.slice(i + 1);
+  }
+  return relFaceCrop(rel, auId, c);
+}
+
 export function auMember(m: RelMember, au?: RelAu): RelMember {
   const o = au?.mset?.[m.charId];
   const out = { ...m };
