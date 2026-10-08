@@ -361,7 +361,7 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
 
     async fetchOne<T extends ListItem>(coll: string, id: string): Promise<T | null> {
       try {
-        const d = await getDoc(doc(db, coll, id));
+        const d = await getDoc(ref(coll, id));   // 홈(자관) 경로 — JN은 homes/{id}/… 아래에 둔다
         if (!d.exists()) return null;
         const raw = d.data() as { data?: Record<string, unknown> };
         return { ...(raw.data ?? {}), id: d.id } as T;
