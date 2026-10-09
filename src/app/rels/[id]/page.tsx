@@ -532,6 +532,8 @@ export default function RelDetailPage() {
   );
   // 역극·로그는 **보고 있는 AU의 것만** (사용자 요청 — AU 역극이 원본 페이지에도 떠서 뒤섞였다).
   // auId가 없는 방·로그는 원본(base) 것이다
+  // 방·로그의 AU — 없거나 지워진 AU는 원본(base)으로 (lounell)
+  const auKeyOf = (id?: string) => (id && id !== 'base' && rel?.aus.some(x => x.id === id) ? id : 'base');
   const relLogs = useMemo(() => logs.filter(l => l.relId === rel?.id && (l.auId ?? 'base') === auId), [logs, rel, auId]);
   // 역극 연동 (4.9) — 내가 참여한 방 + 공개 전환된 완결 방만 (비참여 방은 존재 자체 비노출).
   // 참여자는 역극 페이지와 같은 계산(rpMemberIds)으로 — 자관 기반 방은 저장된 memberIds에 개설자만 있어서
