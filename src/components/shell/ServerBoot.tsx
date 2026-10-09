@@ -9,7 +9,7 @@
 //   · 비로그인: 홈 없음 → 로그인 화면
 // 홈이 있을 때만 그 홈의 설정(테마·메뉴·폰트…)을 받아 캐시한다.
 import React, { useEffect, useState } from 'react';
-import { initSupabase } from '@/lib/supabase';
+import { bootBackend } from '@/lib/backend';
 import { primeSettings } from '@/lib/settingStore';
 import { pickedHomeId, setCurrentHomeId } from '@/lib/home';
 
@@ -23,7 +23,7 @@ export function ServerBoot({ children }: { children: React.ReactNode }) {
     // 백엔드 확정 → 사용자·홈 확정 → 그 홈의 사이트 설정을 한 번에 받아 캐시 → 그 다음에 화면을 그린다.
     // 각 스토어가 렌더 중 동기적으로 설정을 읽기 때문에 순서가 중요하다.
     (async () => {
-      const be = await initSupabase();
+      const be = await bootBackend();
       if (be) {
         let home: string | null = null;
         try {

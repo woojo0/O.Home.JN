@@ -4,18 +4,17 @@
 // 화면 코드는 이 파일의 타입만 알고, 어떤 서비스에 붙었는지는 모른다.
 // 새 백엔드를 추가하려면 이 인터페이스만 구현하면 된다.
 
-export type BackendKind = 'supabase' | 'firebase';
+/** 이 프로젝트는 Firebase만 쓴다 (v2.1.1 — Supabase 어댑터·스키마 제거) */
+export type BackendKind = 'firebase';
 
 /** 설치 화면에서 입력받는 연결 정보 — 모두 공개돼도 되는 값이다(보안은 서버 규칙이 담당) */
-export type BackendConfig =
-  | { kind: 'supabase'; url: string; anonKey: string }
-  | {
-      kind: 'firebase';
-      apiKey: string; authDomain: string; projectId: string;
-      storageBucket: string; appId: string; messagingSenderId?: string;
-      /** Firestore 데이터베이스 ID — 비우면 (default). 콘솔에서 다른 이름으로 만들었을 때만 필요 */
-      databaseId?: string;
-    };
+export type BackendConfig = {
+  kind: 'firebase';
+  apiKey: string; authDomain: string; projectId: string;
+  storageBucket: string; appId: string; messagingSenderId?: string;
+  /** Firestore 데이터베이스 ID — 비우면 (default). 콘솔에서 다른 이름으로 만들었을 때만 필요 */
+  databaseId?: string;
+};
 
 /** 로그인 사용자 */
 export interface BackendUser {

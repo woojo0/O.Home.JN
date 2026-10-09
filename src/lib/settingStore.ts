@@ -42,8 +42,7 @@ function configIdentity(): string {
   if (!cfg) return 'local';
   // 홈(자관)도 출처의 일부 — 총관리자가 다른 홈으로 들어가면 앞 홈의 사본을 비운다 (v2.1)
   const home = currentHomeId() ? `#${currentHomeId()}` : '';
-  if (cfg.kind === 'firebase') return `firebase:${cfg.projectId}${cfg.databaseId ? '/' + cfg.databaseId : ''}${home}`;
-  return `supabase:${cfg.url.replace(/\/+$/, '')}${home}`;
+  return `firebase:${cfg.projectId}${cfg.databaseId ? '/' + cfg.databaseId : ''}${home}`;
 }
 
 /**

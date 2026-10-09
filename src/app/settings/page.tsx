@@ -55,13 +55,13 @@ import { PageTitle, EditableDesc, getPageText, setPageText } from '@/components/
 import { putBlob } from '@/lib/blobStore';
 import { getSetting, setSetting, pushLocalSettings, unsyncedSettingKeys, SETTING_KEYS } from '@/lib/settingStore';
 import { isServerMode, createBackend, backend } from '@/lib/backend';
-import type { BackendConfig, BackendKind } from '@/lib/backend/types';
+import type { BackendConfig } from '@/lib/backend/types';
 import { CONTENT_COLLECTIONS } from '@/lib/backend/types';
 import { visFloorOf } from '@/lib/visFloor';
 import { validateConfig, configFileText, saveLocalConfig, parseFirebaseSnippet, serverConfig, serverConfigSource } from '@/lib/serverConfig';
 import { migrateTo, findOrphanFiles } from '@/lib/transfer';
 import { FIRESTORE_RULES, STORAGE_RULES } from '@/lib/firebaseRules';
-import { SCHEMA_SQL } from '@/lib/schemaSql';
+
 
 const CATEGORIES = [
   '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '캐릭터', '자관 질문', 'TRPG', '감상타래', '메모장',
@@ -1101,10 +1101,6 @@ function MemberPane() {
   const authConsoleUrl = (() => {
     const c = serverConfig();
     if (c?.kind === 'firebase') return `https://console.firebase.google.com/project/${c.projectId}/authentication/users`;
-    if (c?.kind === 'supabase') {
-      const m = c.url.match(/^https:\/\/([a-z0-9-]+)\.supabase\.co/i);
-      return m ? `https://supabase.com/dashboard/project/${m[1]}/auth/users` : '';
-    }
     return '';
   })();
   const [delMember, setDelMember] = useState<{ id: string; nickname: string } | null>(null);
@@ -1389,38 +1385,23 @@ function SecurityRulesRow() {
       <div className="d">
         앱이 업데이트되며 규칙이 바뀔 때가 있습니다 — 새 기능이 갑자기 안 보이거나 목록이 비어 보이거나
         저장이 거부되면 아래를 다시 적용해 보세요.{' '}
-        {cfg?.kind === 'firebase'
-          ? 'Firestore 콘솔의 규칙 화면에 그대로 덮어써도 안전합니다(기존 컬렉션 권한은 그대로 유지).'
-          : 'Supabase 콘솔 → SQL Editor에 통째로 붙여넣고 Run — 여러 번 실행해도 안전합니다(이미 있으면 건너뜀, 쌓아 둔 글·회원은 그대로).'}
+        Firestore 콘솔의 규칙 화면에 그대로 덮어써도 안전합니다(기존 컬렉션 권한은 그대로 유지).
       </div>
-      {cfg?.kind === 'firebase' ? (
-        <div className="setup-row">
-          <button className="btn btn-dark" onClick={() => copy(FIRESTORE_RULES, 'fs')}>
-            {copied === 'fs' ? '복사됨 ✓' : 'Firestore 규칙 복사'}
-          </button>
-          <button className="btn btn-dark" onClick={() => copy(STORAGE_RULES, 'st')}>
-            {copied === 'st' ? '복사됨 ✓' : 'Storage 규칙 복사'}
-          </button>
-          <button className="btn btn-ghost" onClick={() => setOpen(o => !o)}>{open ? '내용 접기' : '내용 보기'}</button>
-        </div>
-      ) : (
-        /* Supabase도 여기서 바로 복사 (v2.0 포크 제보) — 예전에는 「schema.sql을 실행하라」는
-           안내 한 줄뿐이라, 규칙을 다시 적용하러 온 사람이 빈 화면을 만났다 */
-        <div className="setup-row">
-          <button className="btn btn-dark" onClick={() => copy(SCHEMA_SQL, 'sql')}>
-            {copied === 'sql' ? '복사됨 ✓' : '설치 SQL 복사'}
-          </button>
-          <button className="btn btn-ghost" onClick={() => setOpen(o => !o)}>{open ? '내용 접기' : '내용 보기'}</button>
-        </div>
-      )}
-      {open && (cfg?.kind === 'firebase' ? (
+      <div className="setup-row">
+        <button className="btn btn-dark" onClick={() => copy(FIRESTORE_RULES, 'fs')}>
+          {copied === 'fs' ? '복사됨 ✓' : 'Firestore 규칙 복사'}
+        </button>
+        <button className="btn btn-dark" onClick={() => copy(STORAGE_RULES, 'st')}>
+          {copied === 'st' ? '복사됨 ✓' : 'Storage 규칙 복사'}
+        </button>
+        <button className="btn btn-ghost" onClick={() => setOpen(o => !o)}>{open ? '내용 접기' : '내용 보기'}</button>
+      </div>
+      {open && (
         <>
           <pre className="setup-sql">{FIRESTORE_RULES}</pre>
           <pre className="setup-sql">{STORAGE_RULES}</pre>
         </>
-      ) : (
-        <pre className="setup-sql">{SCHEMA_SQL}</pre>
-      ))}
+      )}
     </div>
   );
 }
@@ -1829,24 +1810,20 @@ function DataPane() {
   };
   const toggle = (k: string, v: boolean) => setPicked(p => (v ? [...new Set([...p, k])] : p.filter(x => x !== k)));
 
-  /* ---------- 데이터베이스 이전 (v2.0) — 다른 프로젝트/다른 서비스로 통째 옮기기 ---------- */
+  /* ---------- 데이터베이스 이전 (v2.0) — 다른 Firebase 프로젝트로 통째 옮기기 ---------- */
   const [migOpen, setMigOpen] = useState(false);
-  const [migKind, setMigKind] = useState<BackendKind>('supabase');
-  const [migSb, setMigSb] = useState({ url: '', anonKey: '' });
   const [migFb, setMigFb] = useState({ apiKey: '', authDomain: '', projectId: '', storageBucket: '', appId: '' });
   const [migState, setMigState] = useState<'idle' | 'checking' | 'ready' | 'running' | 'done'>('idle');
   const [migMsg, setMigMsg] = useState('');
 
-  const migCfg = (): BackendConfig => (migKind === 'firebase'
-    ? {
+  const migCfg = (): BackendConfig => ({
         kind: 'firebase',
         apiKey: migFb.apiKey.trim(),
         authDomain: migFb.authDomain.trim() || `${migFb.projectId.trim()}.firebaseapp.com`,
         projectId: migFb.projectId.trim(),
         storageBucket: migFb.storageBucket.trim() || `${migFb.projectId.trim()}.appspot.com`,
         appId: migFb.appId.trim(),
-      }
-    : { kind: 'supabase', url: migSb.url.trim(), anonKey: migSb.anonKey.trim() });
+      });
 
   const migCheck = async () => {
     const bad = validateConfig(migCfg());
@@ -2006,9 +1983,9 @@ function DataPane() {
         </div>
       </div>
 
-      {/* 데이터베이스 이전 (v2.0) — 새 프로젝트·다른 서비스로 통째 옮기기 */}
+      {/* 데이터베이스 이전 (v2.0) — 새 Firebase 프로젝트로 통째 옮기기 */}
       <div className="set-row" style={{ flexWrap: 'wrap' }}>
-        <div className="l"><b>데이터베이스 이전</b><small>다른 프로젝트나 다른 서비스(Supabase ↔ Firebase)로 글·설정·이미지를 통째로 옮깁니다</small></div>
+        <div className="l"><b>데이터베이스 이전</b><small>다른 Firebase 프로젝트로 글·설정·이미지를 통째로 옮깁니다</small></div>
         <button className="btn btn-ghost" style={{ padding: '9px 20px' }}
           onClick={() => { setMigOpen(true); setMigState('idle'); setMigMsg(''); }}>이전하기</button>
       </div>
@@ -2020,21 +1997,7 @@ function DataPane() {
           {migState === 'ready' && <button className="btn btn-accent" onClick={migRun}>이전 시작</button>}
           {migState === 'done' && <button className="btn btn-accent" onClick={migSwitch}>새 DB로 전환</button>}
         </>}>
-        <div className="mini-seg" style={{ marginBottom: 12 }}>
-          <button className={migKind === 'supabase' ? 'on' : ''} onClick={() => setMigKind('supabase')}>Supabase</button>
-          <button className={migKind === 'firebase' ? 'on' : ''} onClick={() => setMigKind('firebase')}>Firebase</button>
-        </div>
-
-        {migKind === 'supabase' ? (
-          <div style={{ display: 'grid', gap: 8 }}>
-            <label className="k-label">Project URL</label>
-            <KInput value={migSb.url} onChange={e => setMigSb(s => ({ ...s, url: e.target.value }))} placeholder="https://xxxx.supabase.co" />
-            <label className="k-label">anon public key</label>
-            <KInput value={migSb.anonKey} onChange={e => setMigSb(s => ({ ...s, anonKey: e.target.value }))} />
-            <p className="hint" style={{ margin: 0 }}>새 프로젝트라면 먼저 스키마 SQL을 실행해 두세요 — 설치 화면과 같은 내용입니다.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
+        <div style={{ display: 'grid', gap: 8 }}>
             <label className="k-label">설정 붙여넣기 (firebaseConfig)</label>
             <KTextarea style={{ minHeight: 84, fontFamily: 'ui-monospace, Consolas, monospace', fontSize: 11.5 }}
               onChange={e => {
@@ -2052,7 +2015,6 @@ function DataPane() {
             <div><label className="k-label">appId</label><KInput value={migFb.appId} onChange={e => setMigFb(f => ({ ...f, appId: e.target.value }))} /></div>
             <p className="hint" style={{ margin: 0 }}>새 프로젝트라면 Firestore·Storage 보안 규칙을 먼저 붙여넣어 두세요.</p>
           </div>
-        )}
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12, flexWrap: 'wrap' }}>
           <button className="btn btn-dark" style={{ height: 33, padding: '0 16px', fontSize: 11 }}
