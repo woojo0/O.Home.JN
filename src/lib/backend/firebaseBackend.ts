@@ -216,18 +216,24 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
         await authMod.updateProfile(cred.user, { displayName: nickname });
         const profile: Record<string, unknown> = { nickname, createdAt: Date.now() };
         if (inviteCode !== undefined) {
-          /* 가입코드 → 홈 (v2.1). 코드 조회는 **계정을 만든 뒤**에 한다 — homes는 로그인한 사람만
-             읽을 수 있어서(코드가 공개로 새지 않게), 아직 프로필이 없는 새 계정만 코드로 홈을 찾는다.
+          /* 가입코드 → 홈 (v2.1). 코드 조회는 **계정을 만든 뒤** invites/{코드} 문서 한 건을 읽는 것으로만 한다
+             (v2.1.1 보안 수정 — 예전엔 homes 컬렉션을 통째로 질의했는데, 규칙이 「프로필 없는 로그인 계정」에게
+             homes 읽기를 열어 둬서 계정만 만들면 모든 자관의 코드를 볼 수 있었다). invites는 정확한 코드를
+             알아야만 get이 되고 목록 조회(list)는 규칙이 막는다 — 모르는 코드는 캐낼 수 없다.
              코드가 틀리면 방금 만든 계정을 도로 지운다 — 남겨 두면 「이미 사용 중」으로 다시 못 쓴다. */
           const code = inviteCode.trim();
-          const hit = code
-            ? await getDocs(query(collection(db, 'homes'), where('inviteCode', '==', code), limit(1)))
-            : null;
-          if (!hit || hit.empty) {
+          let hitHome: string | null = null;
+          if (code) {
+            try {
+              const inv = await getDoc(doc(db, 'invites', code));
+              hitHome = inv.exists() ? String((inv.data() as { homeId?: string }).homeId ?? '') || null : null;
+            } catch { hitHome = null; }
+          }
+          if (!hitHome) {
             try { await cred.user.delete(); } catch { await authMod.signOut(auth); }
             return { ok: false, error: '가입코드가 올바르지 않습니다.' };
           }
-          profile.homeId = hit.docs[0].id;
+          profile.homeId = hitHome;
           profile.joinCode = code;   // 규칙이 홈의 코드와 대조한다 — 아무 홈에나 끼어드는 것을 서버가 막는다
         }
         const r = await withLimit(setDoc(doc(db, 'profiles', cred.user.uid), profile, { merge: true }));
@@ -295,7 +301,16 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
     async listMembers() {
       const own = await ownerInfo();
       const admins = new Set([own?.uid, ...(own?.admins ?? [])].filter(Boolean) as string[]);
-      const snap = await getDocs(collection(db, 'profiles'));
+      // 총관리자는 전부, 회원은 **자기 홈의 회원만** 질의한다 (v2.1.1 — 규칙이 다른 홈의 프로필을 막으므로
+      // 전체 조회는 통째로 거부된다). 홈이 없는 계정은 자기 것만
+      let snap;
+      if (await isAdminNow()) {
+        snap = await getDocs(collection(db, 'profiles'));
+      } else {
+        const me = auth.currentUser ? await toUser(auth.currentUser) : null;
+        if (!me?.homeId) return [];   // 홈 없는 계정은 볼 회원도 없다
+        snap = await getDocs(query(collection(db, 'profiles'), where('homeId', '==', me.homeId)));
+      }
       return snap.docs.map(d => {
         // avatarUrl도 함께 — 이미지 정리가 프로필 사진을 「안 쓰는 파일」로 지우지 않게 (v2.0 사용자 제보)
         const v = d.data() as { nickname?: string; avatarUrl?: string; homeId?: string };
@@ -319,8 +334,20 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
       });
       if (await isAdminNow()) {
         const snap = await getDocs(collection(db, 'homes'));
-        return snap.docs.map(d => rowOf(d.id, d.data() as Record<string, unknown>))
+        const rows = snap.docs.map(d => rowOf(d.id, d.data() as Record<string, unknown>))
           .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+        // invites/{코드} 보정 (v2.1.1) — 이 구조가 생기기 전에 만든 자관은 코드 문서가 없어 가입이 막힌다.
+        // 총관리자가 리스트를 열 때 빠진 것만 채운다 (한 번 채우면 다시 쓰지 않는다)
+        for (const h of rows) {
+          if (!h.inviteCode) continue;
+          try {
+            const inv = await getDoc(doc(db, 'invites', h.inviteCode));
+            if (!inv.exists() || (inv.data() as { homeId?: string }).homeId !== h.id) {
+              await setDoc(doc(db, 'invites', h.inviteCode), { homeId: h.id });
+            }
+          } catch { /* 규칙 미게시 등 — 리스트 자체는 보여 준다 */ }
+        }
+        return rows;
       }
       // 회원은 자기 홈 하나만 (규칙도 그 하나만 읽게 한다)
       const me = auth.currentUser ? await toUser(auth.currentUser) : null;
@@ -334,9 +361,18 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
         name: h.name, inviteCode: h.inviteCode, createdAt: h.createdAt ?? Date.now(),
       }));
       if (r === TIMEOUT) throw new Error(NO_REACH);
+      // 가입코드 → 홈 조회용 문서 (v2.1.1) — 가입 때는 이 문서 한 건만 읽는다
+      if (h.inviteCode) await setDoc(doc(db, 'invites', h.inviteCode), { homeId: h.id });
     },
 
     async updateHome(id, patch) {
+      // 코드가 바뀌면 invites 문서도 옮긴다 — 옛 코드로는 더 못 들어오게
+      if (patch.inviteCode !== undefined) {
+        const before = await getDoc(doc(db, 'homes', id));
+        const old = before.exists() ? String((before.data() as { inviteCode?: string }).inviteCode ?? '') : '';
+        if (old && old !== patch.inviteCode) { try { await deleteDoc(doc(db, 'invites', old)); } catch { /* 없으면 무시 */ } }
+        if (patch.inviteCode) await setDoc(doc(db, 'invites', patch.inviteCode), { homeId: id });
+      }
       await setDoc(doc(db, 'homes', id), patch, { merge: true });
     },
 
@@ -352,6 +388,12 @@ export async function createFirebaseBackend(cfg: FirebaseCfg): Promise<Backend> 
         }
       };
       for (const name of [...CONTENT_COLLECTIONS, 'settings']) await wipe(collection(db, 'homes', id, name));
+      // 가입코드 문서도 — 지운 자관의 코드로 가입이 되면 안 된다
+      try {
+        const before = await getDoc(doc(db, 'homes', id));
+        const code = before.exists() ? String((before.data() as { inviteCode?: string }).inviteCode ?? '') : '';
+        if (code) await deleteDoc(doc(db, 'invites', code));
+      } catch { /* 무시 */ }
       await deleteDoc(doc(db, 'homes', id));
     },
 
