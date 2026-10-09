@@ -76,8 +76,11 @@ service cloud.firestore {
         || (signedIn() && request.auth.uid == uid)
         || (hasProfile() && myProfile().keys().hasAny(['homeId'])
             && resource.data.keys().hasAny(['homeId']) && resource.data.homeId == myProfile().homeId);
+      //  · homeId 없는 프로필(총관리자 설치용)은 **소유자가 아직 없을 때만** — 설치가 끝난 뒤에는 공개 apiKey로
+      //    만든 계정이 프로필을 갖지 못한다 (lounell 보안 제보 반영)
       allow create: if isAdmin() || (signedIn() && request.auth.uid == uid && (
-        !request.resource.data.keys().hasAny(['homeId'])
+        (!request.resource.data.keys().hasAny(['homeId'])
+          && !exists(/databases/$(database)/documents/meta/owner))
         || (exists(/databases/$(database)/documents/homes/$(request.resource.data.homeId))
             && request.resource.data.keys().hasAny(['joinCode'])
             && get(/databases/$(database)/documents/homes/$(request.resource.data.homeId)).data.inviteCode
@@ -126,11 +129,23 @@ service cloud.firestore {
           || isAdmin()
         );
 
-        // 쓰기: 홈 회원
-        allow create: if isContent(coll) && inHome(homeId);
+        // 만들기: 홈 회원 — 글의 주인(authorId)은 자기 자신 (남의 이름으로는 못 만든다, lounell 보안 제보 반영).
+        //  · 총관리자는 백업 복원 때문에 예외 · notifications는 받는 사람이 주인이라 남의 uid를 적는 게 정상
+        allow create: if isContent(coll) && inHome(homeId)
+          && (request.resource.data.get('authorId', null) == request.auth.uid
+              || isAdmin()
+              || coll == 'notifications');
 
-        // 수정·삭제: 작성자 본인 · 편집 권한을 받은 회원(editorIds) · 총관리자
-        allow update, delete: if isContent(coll) && inHome(homeId)
+        // 수정: 작성자 본인 · 편집 권한을 받은 회원(editorIds) · 총관리자 — 주인(authorId)은 바꿀 수 없다(총관리자 제외)
+        allow update: if isContent(coll) && inHome(homeId)
+          && (resource.data.authorId == request.auth.uid
+              || isAdmin()
+              || (resource.data.keys().hasAny(['editorIds'])
+                  && request.auth.uid in resource.data.editorIds))
+          && (isAdmin() || request.resource.data.get('authorId', null) == resource.data.get('authorId', null));
+
+        // 삭제: 작성자 본인 · 편집 권한을 받은 회원 · 총관리자
+        allow delete: if isContent(coll) && inHome(homeId)
           && (resource.data.authorId == request.auth.uid
               || isAdmin()
               || (resource.data.keys().hasAny(['editorIds'])
