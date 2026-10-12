@@ -21,8 +21,8 @@ const FALLBACK: SiteMeta = { title: 'O.HOME' };
 
 type Cfg = { kind: 'firebase'; projectId: string; apiKey: string; databaseId?: string };
 
-/** 배포에 올라간 연결 설정 읽기 — 없으면 env, 그것도 없으면 null */
-async function readConfig(): Promise<Cfg | null> {
+/** 배포에 올라간 연결 설정 읽기 — 없으면 env, 그것도 없으면 null (api/push 라우트도 쓴다 — 호출한 사람 확인용) */
+export async function serverSideConfig(): Promise<Cfg | null> {
   try {
     const raw = await readFile(path.join(process.cwd(), 'public', 'ohome.config.json'), 'utf8');
     const o = JSON.parse(raw) as Record<string, string>;
@@ -62,7 +62,7 @@ function fromFirestore(doc: unknown): SiteMeta | null {
  */
 export async function siteMeta(): Promise<SiteMeta> {
   try {
-    const cfg = await readConfig();
+    const cfg = await serverSideConfig();
     if (!cfg) return FALLBACK;
     // 자관(홈)마다 설정이 다르지만 서버가 홈을 알 수 없어 최상위 settings(설치 확인용)만 본다 —
     // 보통 비어 있으므로 기본 제목이 된다 (탭 제목은 화면이 DocTitle로 붙인다)
