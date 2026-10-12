@@ -10,7 +10,7 @@ rules_version = '2';
 //   homes/{homeId}                  { name, inviteCode, createdAt }
 //   homes/{homeId}/settings/{key}   { value }           ← 홈마다 테마·메뉴·폰트·메인 위젯
 //   homes/{homeId}/<콘텐츠>/{id}     { data, authorId, visibility, sort }
-//   push_subs/{id}                  ← 웹푸시 기기 구독 (회원별 · 홈 밖 최상위 — 서버가 보낼 때 홈을 모른다)
+//   homes/{homeId}/push_subs/{id}   ← 웹푸시 기기 구독 (회원별 · 콘텐츠 규칙 그대로 — 같은 홈 회원끼리 읽힌다)
 //
 // 누가 무엇을 보나
 //   · 비로그인: 아무것도 못 읽는다 (홈은 전부 로그인 뒤에만)
